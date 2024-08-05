@@ -1,0 +1,8 @@
+[package]
+name = "timaeus"
+version = "0.1.0"
+edition = "2021"
+debug = true
+
+[dependencies]
+sdl2 = { version = "0.35", features = ["ttf"] }
