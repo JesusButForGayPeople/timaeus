@@ -19,24 +19,10 @@ pub use std::{
     vec::Vec,
 };
 pub mod colors;
+pub mod debug;
 pub mod grid;
 pub mod level;
 pub mod renderer;
-
-macro_rules! debug {
-    ($($e:expr),+) => {
-        {
-            #[cfg(debug_assertions)]
-            {
-                dbg!($($e),+)
-            }
-            #[cfg(not(debug_assertions))]
-            {
-                ($($e),+)
-            }
-        }
-    };
-}
 
 //Constants:
 pub const RESOLUTION: usize = 7;
@@ -219,15 +205,15 @@ pub enum Surface {
 
 //math functions:
 pub fn sine(num: i32) -> f32 {
-    ((num as f32 / 180.0) * std::f32::consts::PI).sin()
-} // gives the sine of a float in degrees
+    (num as f32 / 180.0 * std::f32::consts::PI).sin()
+} // gives the sine of a float as a percentage of 360 degrees
 
 pub fn cosine(num: i32) -> f32 {
-    ((num as f32 / 180.0) * std::f32::consts::PI).cos()
-} // gives the cosine of a float in degrees
+    (num as f32 / 180.0 * std::f32::consts::PI).cos()
+} // gives the cosine of a floatas a percentage of 360 degrees
 
 pub fn one_if_none(n: f32) -> f32 {
-    if n == 0.0 {
+    if n <= 0.0 {
         return 1.0;
     } else {
         return n;

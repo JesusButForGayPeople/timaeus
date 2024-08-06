@@ -3,6 +3,10 @@ use timaeus::renderer::Renderer;
 
 fn main() -> Result<(), String> {
     //initialization:
+    for i in 0..2 {
+        println!("{:?}", i);
+    }
+
     let sdl_context = sdl2::init()?;
     let frame_duration = Duration::new(0, 1_000_000_000u32 / 60);
     let mut frame_count = 0;
@@ -82,8 +86,6 @@ fn main() -> Result<(), String> {
                     Keycode::J => save(&mut player),
                     Keycode::N => Grid::new_sector(&mut grid, &mut player),
                     Keycode::Y => grid.new_sector = true,
-
-                    Keycode::Backquote => debug(&grid),
 
                     _ => {}
                 },
@@ -432,7 +434,6 @@ fn main() -> Result<(), String> {
         }
         frame_count += 1;
         if frame_count == 10 {
-            println!("mouse toggle:{:#?}", grid.mouse_status.click_toggle);
             frame_count -= 10;
         }
 
@@ -441,14 +442,4 @@ fn main() -> Result<(), String> {
 
     std::thread::sleep(frame_duration);
     Ok(())
-}
-
-pub fn debug(grid: &Grid) {
-    println!("selected sector:{:#?} ", grid.selected_sector);
-    println!("selected wall:{:#?} ", grid.selected_wall);
-    println!("selected point:{:#?}", grid.selected_point);
-
-    println!("selected point:{:#?}", grid.selection.points);
-    println!("selected wall:{:#?}", grid.selection.walls);
-    println!("selected sector:{:#?}", grid.selection.sectors);
 }

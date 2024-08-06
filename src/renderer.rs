@@ -94,7 +94,7 @@ impl Renderer {
                 sector.surface_points[x as usize] = y2_clipped as u32;
             }
             if sector.surface == Surface::TopDraw {
-                for y in y2_clipped as u32..sector.surface_points[x as usize] {
+                for y in y1_clipped as u32..sector.surface_points[x as usize] {
                     self.draw_dot(x as f32, y as f32, sector.top_color)?;
                 }
             }
@@ -102,7 +102,7 @@ impl Renderer {
                 sector.surface_points[x as usize] = y1_clipped as u32;
             }
             if sector.surface == Surface::BottomDraw {
-                for y in sector.surface_points[x as usize]..y1_clipped as u32 {
+                for y in sector.surface_points[x as usize]..y2_clipped as u32 {
                     self.draw_dot(x as f32, y as f32, sector.bottom_color)?;
                 }
             }
@@ -120,300 +120,163 @@ impl Renderer {
         for sector in &mut player.level.sectors {
             // draws sectors/walls from level.rs in 3D as the player sees it
 
-            if player.position.z < sector.bottom_height as f32 {
-                sector.surface = Surface::BottomScan;
-                for x in 0..SCREEN_WIDTH {
-                    sector.surface_points[x] = SCREEN_HEIGHT as u32;
-                }
-            } else if player.position.z > sector.top_height as f32 {
-                sector.surface = Surface::TopScan;
-                for x in 0..SCREEN_WIDTH {
-                    sector.surface_points[x] = 0 as u32;
-                }
-            } else {
-                sector.surface = Surface::None
-            } // Determine if the player can see the top/bottom of the sector
+            for j in 0..2 {
+                for (i, wall) in player.level.walls.iter().enumerate() {
+                    if sector.wall_start as usize <= i && i < sector.wall_end as usize {
+                        let color = wall.color;
+                        //oftset bottom 2 points by player:
+                        let mut x1 = wall.x1 - player.position.x;
+                        let mut y1 = wall.y1 - player.position.y;
+                        let mut x2 = wall.x2 - player.position.x;
+                        let mut y2 = wall.y2 - player.position.y;
 
-            for mut j in 0..2 {
-                if j == 0 {
-                    for (i, wall) in player.level.walls.iter().enumerate() {
-                        if sector.surface == Surface::TopScan {
-                            sector.surface = Surface::TopDraw
-                        }
-                        if sector.surface == Surface::BottomScan {
-                            sector.surface = Surface::BottomDraw
-                        }
-                        if sector.wall_start as usize <= i && i < sector.wall_end as usize {
-                            let color = wall.color;
-                            //oftset bottom 2 points by player:
-                            let x1 = wall.x1 - player.position.x;
-                            let y1 = wall.y1 - player.position.y;
-                            let x2 = wall.x2 - player.position.x;
-                            let y2 = wall.y2 - player.position.y;
-
-                            //world x position:
-                            let world_x1 = x1 as f32 * cosine(player.angle_h)
-                                - y1 as f32 * sine(player.angle_h);
-                            let world_x2 = x2 as f32 * cosine(player.angle_h)
-                                - y2 as f32 * sine(player.angle_h);
-                            let world_x3 = world_x1;
-                            let world_x4 = world_x2;
-
-                            //world y position:
-                            let world_y1 = y1 as f32 * cosine(player.angle_h)
-                                + x1 as f32 * sine(player.angle_h);
-                            let world_y2 = y2 as f32 * cosine(player.angle_h)
-                                + x2 as f32 * sine(player.angle_h);
-                            let world_y3 = world_y1;
-                            let world_y4 = world_y2;
-
-                            //world z height:
-                            let world_z1 = sector.bottom_height as f32 - player.position.z as f32;
-                            let world_z2 = sector.bottom_height as f32 - player.position.z as f32;
-                            let world_z3 = sector.top_height as f32 - player.position.z as f32;
-                            let world_z4 = sector.top_height as f32 - player.position.z as f32;
-
-                            if world_y1 < 1.0 && world_y2 < 1.0 {
-                                continue;
-                            }
-
-                            if world_y1 < 1.0 {
-                                let XYZ {
-                                    x: x1,
-                                    y: y1,
-                                    z: z1,
-                                } = Self::clip_behind(
-                                    world_x1, world_y1, world_z1, world_x2, world_y2, world_z2,
-                                );
-                                let XYZ {
-                                    x: x2,
-                                    y: y2,
-                                    z: z2,
-                                } = Self::clip_behind(
-                                    world_x3,
-                                    world_y3,
-                                    world_z3 as f32,
-                                    world_x4,
-                                    world_y4,
-                                    world_z4 as f32,
-                                );
-                                //screen x:
-                                let screen_x1 = Self::screen_x(x1 as f32, y1 as f32);
-                                let screen_x2 = Self::screen_x(x2 as f32, y2 as f32);
-
-                                //screen y:
-                                let screen_y1 = Self::screen_y(z1 as f32, y1 as f32);
-                                let screen_y2 = Self::screen_y(z2 as f32, y1 as f32);
-                                let screen_y3 = Self::screen_y(world_z3 as f32, world_y3 as f32);
-                                let screen_y4 = Self::screen_y(world_z4 as f32, world_y4 as f32);
-
-                                self.draw_wall(
-                                    screen_x1, screen_x2, screen_y1, screen_y2, screen_y3,
-                                    screen_y4, color, sector,
-                                )?;
-                            } else if world_y2 < 1.0 {
-                                let XYZ {
-                                    x: x1,
-                                    y: y1,
-                                    z: z1,
-                                } = Self::clip_behind(
-                                    world_x2, world_y2, world_z2, world_x1, world_y1, world_z1,
-                                );
-                                let XYZ {
-                                    x: x2,
-                                    y: y2,
-                                    z: z2,
-                                } = Self::clip_behind(
-                                    world_x4,
-                                    world_y4,
-                                    world_z4 as f32,
-                                    world_x3,
-                                    world_y3,
-                                    world_z3 as f32,
-                                );
-                                //screen x:
-                                let screen_x1 = Self::screen_x(x1 as f32, y1 as f32);
-                                let screen_x2 = Self::screen_x(x2 as f32, y2 as f32);
-
-                                //screen y:
-                                let screen_y1 = Self::screen_y(z1 as f32, y1 as f32);
-                                let screen_y2 = Self::screen_y(z2 as f32, y1 as f32);
-                                let screen_y3 = Self::screen_y(world_z3 as f32, world_y3 as f32);
-                                let screen_y4 = Self::screen_y(world_z4 as f32, world_y4 as f32);
-
-                                self.draw_wall(
-                                    screen_x1 as f32,
-                                    screen_x2 as f32,
-                                    screen_y1 as f32,
-                                    screen_y2 as f32,
-                                    screen_y3 as f32,
-                                    screen_y4 as f32,
-                                    color,
-                                    sector,
-                                )?;
+                        if j == 0 {
+                            if player.position.z < sector.bottom_height as f32 {
+                                sector.surface = Surface::BottomScan;
+                                for x in 0..SCREEN_WIDTH {
+                                    sector.surface_points[x] = SCREEN_HEIGHT as u32;
+                                }
+                            } else if player.position.z > sector.top_height as f32 {
+                                sector.surface = Surface::TopScan;
+                                for x in 0..SCREEN_WIDTH {
+                                    sector.surface_points[x] = 0 as u32;
+                                }
                             } else {
-                                //screen x:
-                                let screen_x1 = world_x1 * 700.0 / world_y1 + HALF_WIDTH as f32;
-                                let screen_x2 = world_x2 * 700.0 / world_y2 + HALF_WIDTH as f32;
+                                sector.surface = Surface::None
+                            } // Determine if the player can see the top/bottom of the sector
+                        }
 
-                                //screen y:
-                                let screen_y1 = world_z1 * 700.0 / world_y1 + HALF_HEIGHT as f32;
-                                let screen_y2 = world_z2 * 700.0 / world_y2 + HALF_HEIGHT as f32;
-                                let screen_y3 =
-                                    world_z3 as f32 * 700.0 / world_y3 + HALF_HEIGHT as f32;
-                                let screen_y4 =
-                                    world_z4 as f32 * 700.0 / world_y4 + HALF_HEIGHT as f32;
+                        if j == 1 {
+                            if sector.surface != Surface::None {
+                                x1 = wall.x2 - player.position.x;
+                                x2 = wall.x1 - player.position.x;
+                                y1 = wall.y2 - player.position.y;
+                                y2 = wall.y1 - player.position.y;
 
-                                self.draw_wall(
-                                    screen_x1, screen_x2, screen_y1, screen_y2, screen_y3,
-                                    screen_y4, color, sector,
-                                )?;
+                                if sector.surface == Surface::TopScan {
+                                    sector.surface = Surface::BottomDraw;
+                                }
+                                if sector.surface == Surface::BottomScan {
+                                    sector.surface = Surface::TopDraw;
+                                }
                             }
                         }
-                    }
-                }
-                //the j ==  0 arm draws the backwalls by switching the x1 and x2 coordinates and assigns the points for the surfaces.
-                //the j ==  1 arm assigns x1 and x2 properly to draw the outer face of the wall and draws the surfaces.
-                //other than switching the initial x coordinates and handling the surfaces differently the two arms are identical
-                if j == 1 {
-                    let start = sector.wall_start as usize;
-                    let end = sector.wall_end as usize;
-                    for (i, wall) in player.level.walls.iter().enumerate() {
-                        if sector.surface != Surface::None {
-                            if start <= i && i < end {
-                                let color = wall.color;
-                                //oftset bottom 2 points by player:
-                                let x1 = wall.x2 - player.position.x;
-                                let y1 = wall.y2 - player.position.y;
-                                let x2 = wall.x1 - player.position.x;
-                                let y2 = wall.y1 - player.position.y;
 
-                                let world_x1 = x1 as f32 * cosine(player.angle_h)
-                                    - y1 as f32 * sine(player.angle_h);
-                                let world_x2 = x2 as f32 * cosine(player.angle_h)
-                                    - y2 as f32 * sine(player.angle_h);
-                                let world_x3 = world_x1;
-                                let world_x4 = world_x2;
+                        //world x position:
+                        let world_x1 =
+                            x1 as f32 * cosine(player.angle_h) - y1 as f32 * sine(player.angle_h);
+                        let world_x2 =
+                            x2 as f32 * cosine(player.angle_h) - y2 as f32 * sine(player.angle_h);
+                        let world_x3 = world_x1;
+                        let world_x4 = world_x2;
 
-                                //world y position:
-                                let world_y1 = y1 as f32 * cosine(player.angle_h)
-                                    + x1 as f32 * sine(player.angle_h);
-                                let world_y2 = y2 as f32 * cosine(player.angle_h)
-                                    + x2 as f32 * sine(player.angle_h);
-                                let world_y3 = world_y1;
-                                let world_y4 = world_y2;
+                        //world y position:
+                        let world_y1 =
+                            y1 as f32 * cosine(player.angle_h) + x1 as f32 * sine(player.angle_h);
+                        let world_y2 =
+                            y2 as f32 * cosine(player.angle_h) + x2 as f32 * sine(player.angle_h);
+                        let world_y3 = world_y1;
+                        let world_y4 = world_y2;
 
-                                //world z height:
-                                let world_z1 =
-                                    sector.bottom_height as f32 - player.position.z as f32;
-                                let world_z2 =
-                                    sector.bottom_height as f32 - player.position.z as f32;
-                                let world_z3 = world_z1 + sector.top_height as f32;
-                                let world_z4 = world_z2 + sector.top_height as f32;
+                        //world z height:
+                        let world_z1 = sector.bottom_height as f32 - player.position.z as f32;
+                        let world_z2 = sector.bottom_height as f32 - player.position.z as f32;
+                        let world_z3 = sector.top_height as f32 - player.position.z as f32;
+                        let world_z4 = sector.top_height as f32 - player.position.z as f32;
 
-                                if world_y1 < 1.0 && world_y2 < 1.0 {
-                                    continue;
-                                }
+                        if world_y1 < 1.0 && world_y2 < 1.0 {
+                            continue;
+                        }
 
-                                if world_y1 < 1.0 {
-                                    let XYZ {
-                                        x: x1,
-                                        y: y1,
-                                        z: z1,
-                                    } = Self::clip_behind(
-                                        world_x1, world_y1, world_z1, world_x2, world_y2, world_z2,
-                                    );
-                                    let XYZ {
-                                        x: x2,
-                                        y: y2,
-                                        z: z2,
-                                    } = Self::clip_behind(
-                                        world_x3,
-                                        world_y3,
-                                        world_z3 as f32,
-                                        world_x4,
-                                        world_y4,
-                                        world_z4 as f32,
-                                    );
-                                    //screen x:
-                                    let screen_x1 = Self::screen_x(x1 as f32, y1 as f32);
-                                    let screen_x2 = Self::screen_x(x2 as f32, y2 as f32);
+                        if world_y1 < 1.0 {
+                            let XYZ {
+                                x: x1,
+                                y: y1,
+                                z: z1,
+                            } = Self::clip_behind(
+                                world_x1, world_y1, world_z1, world_x2, world_y2, world_z2,
+                            );
+                            let XYZ {
+                                x: x2,
+                                y: y2,
+                                z: z2,
+                            } = Self::clip_behind(
+                                world_x3,
+                                world_y3,
+                                world_z3 as f32,
+                                world_x4,
+                                world_y4,
+                                world_z4 as f32,
+                            );
+                            //screen x:
+                            let screen_x1 = Self::screen_x(x1 as f32, y1 as f32);
+                            let screen_x2 = Self::screen_x(x2 as f32, y2 as f32);
 
-                                    //screen y:
-                                    let screen_y1 = Self::screen_y(z1 as f32, y1 as f32);
-                                    let screen_y2 = Self::screen_y(z2 as f32, y1 as f32);
-                                    let screen_y3 =
-                                        Self::screen_y(world_z3 as f32, world_y3 as f32);
-                                    let screen_y4 =
-                                        Self::screen_y(world_z4 as f32, world_y4 as f32);
+                            //screen y:
+                            let screen_y1 = Self::screen_y(z1 as f32, y1 as f32);
+                            let screen_y2 = Self::screen_y(z2 as f32, y1 as f32);
+                            let screen_y3 = Self::screen_y(world_z3 as f32, world_y3 as f32);
+                            let screen_y4 = Self::screen_y(world_z4 as f32, world_y4 as f32);
 
-                                    self.draw_wall(
-                                        screen_x1, screen_x2, screen_y1, screen_y2, screen_y3,
-                                        screen_y4, color, sector,
-                                    )?;
-                                } else if world_y2 < 1.0 {
-                                    let XYZ {
-                                        x: x1,
-                                        y: y1,
-                                        z: z1,
-                                    } = Self::clip_behind(
-                                        world_x2, world_y2, world_z2, world_x1, world_y1, world_z1,
-                                    );
-                                    let XYZ {
-                                        x: x2,
-                                        y: y2,
-                                        z: z2,
-                                    } = Self::clip_behind(
-                                        world_x4,
-                                        world_y4,
-                                        world_z4 as f32,
-                                        world_x3,
-                                        world_y3,
-                                        world_z3 as f32,
-                                    );
-                                    //screen x:
-                                    let screen_x1 = Self::screen_x(x1 as f32, y1 as f32);
-                                    let screen_x2 = Self::screen_x(x2 as f32, y2 as f32);
+                            self.draw_wall(
+                                screen_x1, screen_x2, screen_y1, screen_y2, screen_y3, screen_y4,
+                                color, sector,
+                            )?;
+                        } else if world_y2 < 1.0 {
+                            let XYZ {
+                                x: x1,
+                                y: y1,
+                                z: z1,
+                            } = Self::clip_behind(
+                                world_x2, world_y2, world_z2, world_x1, world_y1, world_z1,
+                            );
+                            let XYZ {
+                                x: x2,
+                                y: y2,
+                                z: z2,
+                            } = Self::clip_behind(
+                                world_x4,
+                                world_y4,
+                                world_z4 as f32,
+                                world_x3,
+                                world_y3,
+                                world_z3 as f32,
+                            );
+                            //screen x:
+                            let screen_x1 = Self::screen_x(x1 as f32, y1 as f32);
+                            let screen_x2 = Self::screen_x(x2 as f32, y2 as f32);
 
-                                    //screen y:
-                                    let screen_y1 = Self::screen_y(z1 as f32, y1 as f32);
-                                    let screen_y2 = Self::screen_y(z2 as f32, y1 as f32);
-                                    let screen_y3 =
-                                        Self::screen_y(world_z3 as f32, world_y3 as f32);
-                                    let screen_y4 =
-                                        Self::screen_y(world_z4 as f32, world_y4 as f32);
+                            //screen y:
+                            let screen_y1 = Self::screen_y(z1 as f32, y1 as f32);
+                            let screen_y2 = Self::screen_y(z2 as f32, y1 as f32);
+                            let screen_y3 = Self::screen_y(world_z3 as f32, world_y3 as f32);
+                            let screen_y4 = Self::screen_y(world_z4 as f32, world_y4 as f32);
 
-                                    self.draw_wall(
-                                        screen_x1 as f32,
-                                        screen_x2 as f32,
-                                        screen_y1 as f32,
-                                        screen_y2 as f32,
-                                        screen_y3 as f32,
-                                        screen_y4 as f32,
-                                        color,
-                                        sector,
-                                    )?;
-                                } else {
-                                    //screen x:
-                                    let screen_x1 = world_x1 * 700.0 / world_y1 + HALF_WIDTH as f32;
-                                    let screen_x2 = world_x2 * 700.0 / world_y2 + HALF_WIDTH as f32;
+                            self.draw_wall(
+                                screen_x1 as f32,
+                                screen_x2 as f32,
+                                screen_y1 as f32,
+                                screen_y2 as f32,
+                                screen_y3 as f32,
+                                screen_y4 as f32,
+                                color,
+                                sector,
+                            )?;
+                        } else {
+                            //screen x:
+                            let screen_x1 = world_x1 * 700.0 / world_y1 + HALF_WIDTH as f32;
+                            let screen_x2 = world_x2 * 700.0 / world_y2 + HALF_WIDTH as f32;
 
-                                    //screen y:
-                                    let screen_y1 =
-                                        world_z1 * 700.0 / world_y1 + HALF_HEIGHT as f32;
-                                    let screen_y2 =
-                                        world_z2 * 700.0 / world_y2 + HALF_HEIGHT as f32;
-                                    let screen_y3 =
-                                        world_z3 as f32 * 700.0 / world_y3 + HALF_HEIGHT as f32;
-                                    let screen_y4 =
-                                        world_z4 as f32 * 700.0 / world_y4 + HALF_HEIGHT as f32;
+                            //screen y:
+                            let screen_y1 = world_z1 * 700.0 / world_y1 + HALF_HEIGHT as f32;
+                            let screen_y2 = world_z2 * 700.0 / world_y2 + HALF_HEIGHT as f32;
+                            let screen_y3 = world_z3 as f32 * 700.0 / world_y3 + HALF_HEIGHT as f32;
+                            let screen_y4 = world_z4 as f32 * 700.0 / world_y4 + HALF_HEIGHT as f32;
 
-                                    self.draw_wall(
-                                        screen_x1, screen_x2, screen_y1, screen_y2, screen_y3,
-                                        screen_y4, color, sector,
-                                    )?;
-                                }
-                            }
+                            self.draw_wall(
+                                screen_x1, screen_x2, screen_y1, screen_y2, screen_y3, screen_y4,
+                                color, sector,
+                            )?;
                         }
                     }
                 }
