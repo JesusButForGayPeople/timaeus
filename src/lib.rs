@@ -41,7 +41,7 @@ pub struct XYZ {
 
 pub struct PlayerInfo {
     pub position: XYZ, // the players position in space
-    pub angle_h: i32,  // the horizontal angle of the players field of view
+    pub angle_h: f32,  // the horizontal angle of the players field of view
     pub level: Level,  // the map that the player is currently within; made up of sectors
 }
 
@@ -61,7 +61,7 @@ impl PlayerInfo {
                 y: 400.0,
                 z: 10.0,
             },
-            angle_h: 0,
+            angle_h: 0.0,
             level: init_level,
         }
     }
@@ -109,16 +109,12 @@ impl PlayerInfo {
         player.position.z += PIXEL_SCALE as f32;
     }
     pub fn look_left(player: &mut PlayerInfo) {
-        player.angle_h -= 10 * PIXEL_SCALE as i32;
-        if player.angle_h <= 0 {
-            player.angle_h = 360
-        }
+        player.angle_h -= 10.0;
+        println!("angle_h: {}", player.angle_h);
     }
     pub fn look_right(player: &mut PlayerInfo) {
-        player.angle_h += 10 * PIXEL_SCALE as i32;
-        if player.angle_h > 360 {
-            player.angle_h = 0
-        }
+        player.angle_h += 10.0;
+        println!("angle_h: {}", player.angle_h);
     }
     pub fn move_fowward(player: &mut PlayerInfo) {
         let dx = sine(player.angle_h) * 10.00;
@@ -204,12 +200,12 @@ pub enum Surface {
 } // ...  and as such sould not be saved nor drawn
 
 //math functions:
-pub fn sine(num: i32) -> f32 {
-    (num as f32 / 180.0 * std::f32::consts::PI).sin()
+pub fn sine(num: f32) -> f32 {
+    ((num / 180.0) * std::f32::consts::PI).sin()
 } // gives the sine of a float as a percentage of 360 degrees
 
-pub fn cosine(num: i32) -> f32 {
-    (num as f32 / 180.0 * std::f32::consts::PI).cos()
+pub fn cosine(num: f32) -> f32 {
+    ((num / 180.0) * std::f32::consts::PI).cos()
 } // gives the cosine of a floatas a percentage of 360 degrees
 
 pub fn one_if_none(n: f32) -> f32 {

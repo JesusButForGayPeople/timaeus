@@ -2,6 +2,7 @@ use timaeus::grid::*;
 use timaeus::renderer::Renderer;
 
 fn main() -> Result<(), String> {
+    println!("{:?}", debug::double_degree_test());
     //initialization:
     for i in 0..2 {
         println!("{:?}", i);

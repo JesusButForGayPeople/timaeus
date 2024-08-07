@@ -69,6 +69,7 @@ impl Renderer {
         b2: f32,
         t1: f32,
         t2: f32,
+        loop_number: u32,
         color: Color,
         sector: &mut Sector,
     ) -> Result<(), String> {
@@ -77,38 +78,53 @@ impl Renderer {
         let difference_top_y = t2 - t1;
         let difference_x = one_if_none(x2 - x1);
         //clip x
+
         let x1_clipped = Self::clip_width(x1);
         let x2_clipped = Self::clip_width(x2);
+
         //draw x vertical lines
         for x in (x1_clipped as i32)..(x2_clipped as i32) {
             // the y start and end points
-            let y1 = difference_bottom_y * (x as f32 - x1 + 0.5) / difference_x as f32 + b1;
-            let y2 = difference_top_y * (x as f32 - x1 + 0.5) / difference_x as f32 + t1;
+            let y1 = difference_bottom_y * (x as f32 - x1 - 0.5) / difference_x as f32 + b1;
+            let y2 = difference_top_y * (x as f32 - x1 - 0.5) / difference_x as f32 + t1;
             //clip y
             let y1_clipped = Self::clip_height(y1);
             let y2_clipped = Self::clip_height(y2);
 
             //surface
 
-            if sector.surface == Surface::TopScan {
-                sector.surface_points[x as usize] = y2_clipped as u32;
-            }
-            if sector.surface == Surface::TopDraw {
-                for y in y1_clipped as u32..sector.surface_points[x as usize] {
-                    self.draw_dot(x as f32, y as f32, sector.top_color)?;
+            if loop_number == 1 {
+                for y in (y1_clipped as i32)..(y2_clipped as i32) {
+                    self.draw_dot(x as f32, y as f32, color)?;
                 }
             }
-            if sector.surface == Surface::BottomScan {
-                sector.surface_points[x as usize] = y1_clipped as u32;
-            }
-            if sector.surface == Surface::BottomDraw {
-                for y in sector.surface_points[x as usize]..y2_clipped as u32 {
-                    self.draw_dot(x as f32, y as f32, sector.bottom_color)?;
+
+            match sector.surface {
+                Surface::TopScan => {
+                    sector.surface_points[x as usize] = y1_clipped as u32;
+                    continue;
                 }
+                Surface::TopDraw => {
+                    for y in sector.surface_points[x as usize]..y2_clipped as u32 {
+                        self.draw_dot(x as f32, y as f32, sector.bottom_color)?;
+                    }
+                }
+                Surface::BottomScan => {
+                    sector.surface_points[x as usize] = y2_clipped as u32;
+                    continue;
+                }
+                Surface::BottomDraw => {
+                    for y in y2_clipped as u32..sector.surface_points[x as usize] {
+                        self.draw_dot(x as f32, y as f32, sector.top_color)?;
+                    }
+                }
+                Surface::None => {}
             }
-            if sector.surface == Surface::None {}
-            for y in (y1_clipped as i32)..(y2_clipped as i32) {
-                self.draw_dot(x as f32, y as f32, color)?;
+
+            if loop_number == 2 {
+                for y in (y1_clipped as i32)..(y2_clipped as i32) {
+                    self.draw_dot(x as f32, y as f32, color)?;
+                }
             }
         }
         Ok(())
@@ -119,8 +135,14 @@ impl Renderer {
         let player = PlayerInfo::distances(player_raw);
         for sector in &mut player.level.sectors {
             // draws sectors/walls from level.rs in 3D as the player sees it
+            if player.position.z > sector.bottom_height as f32 {
+                sector.surface = Surface::BottomScan;
+            }
+            if player.position.z < sector.top_height as f32 {
+                sector.surface = Surface::TopScan;
+            }
 
-            for j in 0..2 {
+            for j in 0..3 {
                 for (i, wall) in player.level.walls.iter().enumerate() {
                     if sector.wall_start as usize <= i && i < sector.wall_end as usize {
                         let color = wall.color;
@@ -130,35 +152,20 @@ impl Renderer {
                         let mut x2 = wall.x2 - player.position.x;
                         let mut y2 = wall.y2 - player.position.y;
 
-                        if j == 0 {
-                            if player.position.z < sector.bottom_height as f32 {
-                                sector.surface = Surface::BottomScan;
-                                for x in 0..SCREEN_WIDTH {
-                                    sector.surface_points[x] = SCREEN_HEIGHT as u32;
-                                }
-                            } else if player.position.z > sector.top_height as f32 {
-                                sector.surface = Surface::TopScan;
-                                for x in 0..SCREEN_WIDTH {
-                                    sector.surface_points[x] = 0 as u32;
-                                }
-                            } else {
-                                sector.surface = Surface::None
-                            } // Determine if the player can see the top/bottom of the sector
+                        if j == 2 {
+                            if sector.surface == Surface::TopScan {
+                                sector.surface = Surface::TopDraw;
+                            }
+                            if sector.surface == Surface::BottomScan {
+                                sector.surface = Surface::BottomDraw;
+                            }
                         }
-
                         if j == 1 {
                             if sector.surface != Surface::None {
                                 x1 = wall.x2 - player.position.x;
                                 x2 = wall.x1 - player.position.x;
                                 y1 = wall.y2 - player.position.y;
                                 y2 = wall.y1 - player.position.y;
-
-                                if sector.surface == Surface::TopScan {
-                                    sector.surface = Surface::BottomDraw;
-                                }
-                                if sector.surface == Surface::BottomScan {
-                                    sector.surface = Surface::TopDraw;
-                                }
                             }
                         }
 
@@ -188,6 +195,16 @@ impl Renderer {
                             continue;
                         }
 
+                        //screen x:
+                        let mut screen_x1 = world_x1 * 700.0 / world_y1 + HALF_WIDTH as f32;
+                        let mut screen_x2 = world_x2 * 700.0 / world_y2 + HALF_WIDTH as f32;
+
+                        //screen y:
+                        let mut screen_y1 = world_z1 * 700.0 / world_y1 + HALF_HEIGHT as f32;
+                        let mut screen_y2 = world_z2 * 700.0 / world_y2 + HALF_HEIGHT as f32;
+                        let mut screen_y3 = world_z3 as f32 * 700.0 / world_y3 + HALF_HEIGHT as f32;
+                        let mut screen_y4 = world_z4 as f32 * 700.0 / world_y4 + HALF_HEIGHT as f32;
+
                         if world_y1 < 1.0 {
                             let XYZ {
                                 x: x1,
@@ -209,19 +226,14 @@ impl Renderer {
                                 world_z4 as f32,
                             );
                             //screen x:
-                            let screen_x1 = Self::screen_x(x1 as f32, y1 as f32);
-                            let screen_x2 = Self::screen_x(x2 as f32, y2 as f32);
+                            screen_x1 = Self::screen_x(x1 as f32, y1 as f32);
+                            screen_x2 = Self::screen_x(x2 as f32, y2 as f32);
 
                             //screen y:
-                            let screen_y1 = Self::screen_y(z1 as f32, y1 as f32);
-                            let screen_y2 = Self::screen_y(z2 as f32, y1 as f32);
-                            let screen_y3 = Self::screen_y(world_z3 as f32, world_y3 as f32);
-                            let screen_y4 = Self::screen_y(world_z4 as f32, world_y4 as f32);
-
-                            self.draw_wall(
-                                screen_x1, screen_x2, screen_y1, screen_y2, screen_y3, screen_y4,
-                                color, sector,
-                            )?;
+                            screen_y1 = Self::screen_y(z1 as f32, y1 as f32);
+                            screen_y2 = Self::screen_y(z2 as f32, y1 as f32);
+                            screen_y3 = Self::screen_y(world_z3 as f32, world_y3 as f32);
+                            screen_y4 = Self::screen_y(world_z4 as f32, world_y4 as f32);
                         } else if world_y2 < 1.0 {
                             let XYZ {
                                 x: x1,
@@ -243,41 +255,19 @@ impl Renderer {
                                 world_z3 as f32,
                             );
                             //screen x:
-                            let screen_x1 = Self::screen_x(x1 as f32, y1 as f32);
-                            let screen_x2 = Self::screen_x(x2 as f32, y2 as f32);
+                            screen_x1 = Self::screen_x(x1 as f32, y1 as f32);
+                            screen_x2 = Self::screen_x(x2 as f32, y2 as f32);
 
                             //screen y:
-                            let screen_y1 = Self::screen_y(z1 as f32, y1 as f32);
-                            let screen_y2 = Self::screen_y(z2 as f32, y1 as f32);
-                            let screen_y3 = Self::screen_y(world_z3 as f32, world_y3 as f32);
-                            let screen_y4 = Self::screen_y(world_z4 as f32, world_y4 as f32);
-
-                            self.draw_wall(
-                                screen_x1 as f32,
-                                screen_x2 as f32,
-                                screen_y1 as f32,
-                                screen_y2 as f32,
-                                screen_y3 as f32,
-                                screen_y4 as f32,
-                                color,
-                                sector,
-                            )?;
-                        } else {
-                            //screen x:
-                            let screen_x1 = world_x1 * 700.0 / world_y1 + HALF_WIDTH as f32;
-                            let screen_x2 = world_x2 * 700.0 / world_y2 + HALF_WIDTH as f32;
-
-                            //screen y:
-                            let screen_y1 = world_z1 * 700.0 / world_y1 + HALF_HEIGHT as f32;
-                            let screen_y2 = world_z2 * 700.0 / world_y2 + HALF_HEIGHT as f32;
-                            let screen_y3 = world_z3 as f32 * 700.0 / world_y3 + HALF_HEIGHT as f32;
-                            let screen_y4 = world_z4 as f32 * 700.0 / world_y4 + HALF_HEIGHT as f32;
-
-                            self.draw_wall(
-                                screen_x1, screen_x2, screen_y1, screen_y2, screen_y3, screen_y4,
-                                color, sector,
-                            )?;
+                            screen_y1 = Self::screen_y(z1 as f32, y1 as f32);
+                            screen_y2 = Self::screen_y(z2 as f32, y1 as f32);
+                            screen_y3 = Self::screen_y(world_z3 as f32, world_y3 as f32);
+                            screen_y4 = Self::screen_y(world_z4 as f32, world_y4 as f32);
                         }
+                        self.draw_wall(
+                            screen_x1, screen_x2, screen_y1, screen_y2, screen_y3, screen_y4, j,
+                            color, sector,
+                        )?;
                     }
                 }
             }
@@ -319,9 +309,9 @@ impl Renderer {
 
     pub fn clip_behind(x1: f32, y1: f32, z1: f32, x2: f32, y2: f32, z2: f32) -> XYZ {
         let dy = y1 - y2;
-        let d = one_if_none(dy);
-        let y = one_if_none(y1);
-        let s = y / one_if_none(d);
+        let d = dy;
+        let y = y1;
+        let s = y / d;
         let x_clipped = x1 + s * (x2 - (x1));
         let y_clipped = y1 + s * (y2 - (y1));
         let z_clipped = z1 + s * (z2 - (z1));
