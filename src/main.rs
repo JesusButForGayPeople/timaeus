@@ -1,6 +1,9 @@
 use timaeus::grid::*;
 use timaeus::renderer::Renderer;
 
+// git commit ./
+// git push origin main
+
 fn main() -> Result<(), String> {
     println!("{:?}", debug::double_degree_test());
     //initialization:

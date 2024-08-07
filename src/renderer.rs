@@ -85,19 +85,13 @@ impl Renderer {
         //draw x vertical lines
         for x in (x1_clipped as i32)..(x2_clipped as i32) {
             // the y start and end points
-            let y1 = difference_bottom_y * (x as f32 - x1 - 0.5) / difference_x as f32 + b1;
-            let y2 = difference_top_y * (x as f32 - x1 - 0.5) / difference_x as f32 + t1;
+            let y1 = difference_bottom_y * (x as f32 - x1 + 0.5) / difference_x as f32 + b1;
+            let y2 = difference_top_y * (x as f32 - x1 + 0.5) / difference_x as f32 + t1;
             //clip y
             let y1_clipped = Self::clip_height(y1);
             let y2_clipped = Self::clip_height(y2);
 
             //surface
-
-            if loop_number == 1 {
-                for y in (y1_clipped as i32)..(y2_clipped as i32) {
-                    self.draw_dot(x as f32, y as f32, color)?;
-                }
-            }
 
             match sector.surface {
                 Surface::TopScan => {
@@ -121,10 +115,8 @@ impl Renderer {
                 Surface::None => {}
             }
 
-            if loop_number == 2 {
-                for y in (y1_clipped as i32)..(y2_clipped as i32) {
-                    self.draw_dot(x as f32, y as f32, color)?;
-                }
+            for y in (y1_clipped as i32)..(y2_clipped as i32) {
+                self.draw_dot(x as f32, y as f32, color)?;
             }
         }
         Ok(())
