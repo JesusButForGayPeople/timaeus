@@ -32,13 +32,14 @@ pub const SCREEN_HEIGHT: usize = RESOLUTION * 120;
 pub const HALF_HEIGHT: usize = SCREEN_HEIGHT / 2;
 pub const PIXEL_SCALE: usize = 1;
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct XYZ {
     pub x: f32,
     pub y: f32,
     pub z: f32,
 }
 
+#[derive(Clone, Default, Debug)]
 pub struct PlayerInfo {
     pub position: XYZ, // the players position in space
     pub angle_h: f32,  // the horizontal angle of the players field of view
@@ -88,8 +89,8 @@ impl PlayerInfo {
                         y2 as f32 * cosine(player.angle_h) + x2 as f32 * sine(player.angle_h);
 
                     sector.distance += distance(
-                        0.0,
-                        0.0,
+                        0.001,
+                        0.001,
                         (world_x1 + world_x2) / 2.0,
                         (world_y1 + world_y2) / 2.0,
                     );
@@ -110,10 +111,16 @@ impl PlayerInfo {
     }
     pub fn look_left(player: &mut PlayerInfo) {
         player.angle_h -= 10.0;
+        if player.angle_h < 0.0 {
+            player.angle_h += 360.0;
+        }
         println!("angle_h: {}", player.angle_h);
     }
     pub fn look_right(player: &mut PlayerInfo) {
         player.angle_h += 10.0;
+        if player.angle_h >= 359.0 {
+            player.angle_h -= 360.0;
+        }
         println!("angle_h: {}", player.angle_h);
     }
     pub fn move_fowward(player: &mut PlayerInfo) {
@@ -142,7 +149,7 @@ impl PlayerInfo {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default, Debug)]
 pub struct Level {
     pub number_of_sectors: u32,
     pub sectors: Vec<Sector>, // 3d space enclosed by walls on all sides and optionally surfaces on the top and bottom
@@ -150,7 +157,7 @@ pub struct Level {
     pub walls: Vec<Wall>, // horizontal pane used to build sectors
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Wall {
     pub x1: f32, // first x
     pub y1: f32, // first y
@@ -177,7 +184,7 @@ impl Wall {
     } // returns either the first or second point of a given wall
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Sector {
     pub wall_start: i32, // walls are assigned to sectors ordinally so each sector says which wall indicates its start
     pub wall_end: i32,   // ...  and which wall indicateds its end
@@ -187,16 +194,13 @@ pub struct Sector {
     pub top_color: Color, // ceiling color
     pub bottom_color: Color, // floor color
     pub surface_points: [u32; SCREEN_WIDTH], // used to store the value of the points in the visible surface of a sector which are then used to draw the surface on the next loop
-    pub surface: Surface, // indicates which surface (if any) is currently being drawn
+    pub surface: Option<Surface>, // indicates which surface (if any) is currently being drawn
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Surface {
     TopScan,    // indicates that ceiling points should be saved
     BottomScan, // indicates that floor points should be saved
-    TopDraw,    // indicates that saved ceiling points should be drawn
-    BottomDraw, // indicates that saved floor points should be drawn
-    None,       // indicates that all surfaces of the given sector are not visible to the player
 } // ...  and as such sould not be saved nor drawn
 
 //math functions:
@@ -209,7 +213,7 @@ pub fn cosine(num: f32) -> f32 {
 } // gives the cosine of a floatas a percentage of 360 degrees
 
 pub fn one_if_none(n: f32) -> f32 {
-    if n <= 0.0 {
+    if n == 0.0 {
         return 1.0;
     } else {
         return n;

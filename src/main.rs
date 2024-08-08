@@ -90,6 +90,9 @@ fn main() -> Result<(), String> {
                     Keycode::J => save(&mut player),
                     Keycode::N => Grid::new_sector(&mut grid, &mut player),
                     Keycode::Y => grid.new_sector = true,
+                    Keycode::P => {
+                        println!("{:?}", player.position)
+                    }
 
                     _ => {}
                 },

@@ -92,7 +92,7 @@ impl Grid {
             top_color: colors::WHITE,
             bottom_color: colors::BLACK,
             surface_points: [0; SCREEN_WIDTH],
-            surface: Surface::None,
+            surface: None,
         });
         player.level.number_of_sectors += 1;
     } // creates a new cyan sector in the center of the grid
@@ -195,7 +195,7 @@ pub fn save(player: &mut PlayerInfo) -> () {
 
     for s in 0..player.level.number_of_sectors {
         let sector = format!(
-            "Sector{{\n wall_start:{:?},\n wall_end:{:?},\n bottom_height:{:?},\n top_height:{:?},\n distance:{:?},\n top_color:Color::RGBA{:?},\n bottom_color:Color::RGBA{:?},\n surface:Surface::{:?},\n surface_points:{:?},\n}},\n",
+            "Sector{{\n wall_start:{:?},\n wall_end:{:?},\n bottom_height:{:?},\n top_height:{:?},\n distance:{:?},\n top_color:Color::RGBA{:?},\n bottom_color:Color::RGBA{:?},\n surface:{:?},\n surface_points:{:?},\n}},\n",
             player.level.sectors[s as usize].wall_start,
             player.level.sectors[s as usize].wall_end,
             player.level.sectors[s as usize].bottom_height,
