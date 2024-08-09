@@ -19,7 +19,6 @@ pub use std::{
     vec::Vec,
 };
 pub mod colors;
-pub mod debug;
 pub mod grid;
 pub mod level;
 pub mod renderer;
@@ -42,7 +41,7 @@ pub struct XYZ {
 #[derive(Clone, Default, Debug)]
 pub struct PlayerInfo {
     pub position: XYZ, // the players position in space
-    pub angle_h: f32,  // the horizontal angle of the players field of view
+    pub angle_h: i32,  // the horizontal angle of the players field of view
     pub level: Level,  // the map that the player is currently within; made up of sectors
 }
 
@@ -62,7 +61,7 @@ impl PlayerInfo {
                 y: 400.0,
                 z: 10.0,
             },
-            angle_h: 0.0,
+            angle_h: 0,
             level: init_level,
         }
     }
@@ -88,9 +87,9 @@ impl PlayerInfo {
                     let world_y2 =
                         y2 as f32 * cosine(player.angle_h) + x2 as f32 * sine(player.angle_h);
 
-                    sector.distance += distance(
-                        0.001,
-                        0.001,
+                    sector.distance = distance(
+                        0.0,
+                        0.0,
                         (world_x1 + world_x2) / 2.0,
                         (world_y1 + world_y2) / 2.0,
                     );
@@ -110,27 +109,21 @@ impl PlayerInfo {
         player.position.z += PIXEL_SCALE as f32;
     }
     pub fn look_left(player: &mut PlayerInfo) {
-        player.angle_h -= 10.0;
-        if player.angle_h < 0.0 {
-            player.angle_h += 360.0;
-        }
+        player.angle_h -= 10;
         println!("angle_h: {}", player.angle_h);
     }
     pub fn look_right(player: &mut PlayerInfo) {
-        player.angle_h += 10.0;
-        if player.angle_h >= 359.0 {
-            player.angle_h -= 360.0;
-        }
+        player.angle_h += 10;
         println!("angle_h: {}", player.angle_h);
     }
     pub fn move_fowward(player: &mut PlayerInfo) {
-        let dx = sine(player.angle_h) * 10.00;
+        let dx = sine(player.angle_h) * 10.01;
         let dy = cosine(player.angle_h) * 10.00;
         player.position.x += dx;
         player.position.y += dy;
     }
     pub fn move_right(player: &mut PlayerInfo) {
-        let dx = sine(player.angle_h) * 10.00;
+        let dx = sine(player.angle_h) * 10.01;
         let dy = cosine(player.angle_h) * 10.00;
         player.position.x += dy;
         player.position.y -= dx;
@@ -199,17 +192,17 @@ pub struct Sector {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Surface {
-    TopScan,    // indicates that ceiling points should be saved
+    TopScan,    // indicates that ceiling poi.nts should be saved
     BottomScan, // indicates that floor points should be saved
 } // ...  and as such sould not be saved nor drawn
 
 //math functions:
-pub fn sine(num: f32) -> f32 {
-    ((num / 180.0) * std::f32::consts::PI).sin()
+pub fn sine(num: i32) -> f32 {
+    ((num as f32 - 0.001) / 180.0 * std::f32::consts::PI).sin()
 } // gives the sine of a float as a percentage of 360 degrees
 
-pub fn cosine(num: f32) -> f32 {
-    ((num / 180.0) * std::f32::consts::PI).cos()
+pub fn cosine(num: i32) -> f32 {
+    ((num as f32 + 0.001) / 180.0 * std::f32::consts::PI).cos()
 } // gives the cosine of a floatas a percentage of 360 degrees
 
 pub fn one_if_none(n: f32) -> f32 {
@@ -237,7 +230,7 @@ pub fn sort(mut sec_vec: Vec<Sector>) -> Vec<Sector> {
     while swapped {
         swapped = false;
         for i in 0..sec_vec.len() - 1 {
-            if sec_vec[i].distance < sec_vec[i + 1].distance {
+            if sec_vec[i].distance <= sec_vec[i + 1].distance {
                 sec_vec.swap(i, i + 1);
                 swapped = true;
             }

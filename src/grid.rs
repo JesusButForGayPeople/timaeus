@@ -270,8 +270,8 @@ impl renderer::Renderer {
 
     pub fn draw_circle(&mut self, x: f32, y: f32, radius: u32, color: Color) -> Result<(), String> {
         for t in 0..360 {
-            let x1 = x + (radius as f32 * cosine(t as f32));
-            let y1 = y + (radius as f32 * sine(t as f32));
+            let x1 = x + (radius as f32 * cosine(t));
+            let y1 = y + (radius as f32 * sine(t));
             self.draw_dot(x1, y1, color)?;
         }
         Ok(())
@@ -294,8 +294,8 @@ impl renderer::Renderer {
         ))?;
 
         for t in player.angle_h as i32 - 22..player.angle_h as i32 + 22 {
-            let x1 = x + (70.0 * sine(t as f32));
-            let y1 = y + (70.0 * cosine(t as f32));
+            let x1 = x + (70.0 * sine(t));
+            let y1 = y + (70.0 * cosine(t));
             self.draw_dot(x1, y1, color)?;
         }
         Ok(())

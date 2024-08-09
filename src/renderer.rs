@@ -90,31 +90,28 @@ impl Renderer {
             //clip y
             let mut y1_clipped = Self::clip_height(y1);
             let mut y2_clipped = Self::clip_height(y2);
-
+            let mut draw_color = color;
             //surface
             if cycle == 0 {
+                // on the first pass we collect the points for the surface we want to draw
                 if sector.surface == Some(Surface::BottomScan) {
                     sector.surface_points[x as usize] = y1_clipped as u32;
-                }
+                } // floor points
                 if sector.surface == Some(Surface::TopScan) {
                     sector.surface_points[x as usize] = y2_clipped as u32;
-                }
-                for y in (y1_clipped as i32)..(y2_clipped as i32) {
-                    self.draw_dot(x as f32, y as f32, color)?;
-                }
+                } // ceiling points
             } else if cycle == 1 {
                 if sector.surface == Some(Surface::BottomScan) {
                     y2_clipped = sector.surface_points[x as usize] as f32;
-                    for y in (y1_clipped as i32)..(y2_clipped as i32) {
-                        self.draw_dot(x as f32, y as f32, sector.bottom_color)?;
-                    }
+                    draw_color = sector.bottom_color;
                 }
                 if sector.surface == Some(Surface::TopScan) {
                     y1_clipped = sector.surface_points[x as usize] as f32;
-                    for y in (y1_clipped as i32)..(y2_clipped as i32) {
-                        self.draw_dot(x as f32, y as f32, sector.top_color)?;
-                    }
+                    draw_color = sector.top_color;
                 }
+            }
+            for y in (y1_clipped as i32)..(y2_clipped as i32) {
+                self.draw_dot(x as f32, y as f32, draw_color)?;
             }
         }
         Ok(())
@@ -127,22 +124,23 @@ impl Renderer {
         for s in 0..player.level.number_of_sectors {
             // draws sectors/walls from level.rs in 3D as the player sees it
             let mut sector = player.level.sectors[s as usize];
+            sector.distance = 0.0;
             let mut number_of_cycles = 1;
             if player.position.z < sector.bottom_height as f32 {
-                sector.surface = Some(Surface::BottomScan);
+                sector.surface = Some(Surface::BottomScan); // if the player is below the bottom of the sector we collect the floor points
                 number_of_cycles += 1;
                 for x in 0..SCREEN_WIDTH {
                     sector.surface_points[x] = SCREEN_HEIGHT as u32;
-                }
+                } // in the event that one of the walls isnt drawn we fill the missing surface with the bottom color
             } else if player.position.z > sector.top_height as f32 {
-                sector.surface = Some(Surface::TopScan);
+                sector.surface = Some(Surface::TopScan); // if the player is above the top of the sector we collect the ceiling points
                 number_of_cycles += 1;
                 for x in 0..SCREEN_WIDTH {
                     sector.surface_points[x] = 0 as u32;
-                }
+                } // in the event that one of the walls isnt drawn we fill the missing surface with the top color
             } else {
                 sector.surface = None;
-            }
+            } // if the player can't see either surface we don't need to collect any points
 
             for cycle in 0..number_of_cycles {
                 for w in sector.wall_start..sector.wall_end {
@@ -161,7 +159,7 @@ impl Renderer {
                         let swapy = y1;
                         y1 = y2;
                         y2 = swapy;
-                    }
+                    } // on the second pass draw the back sides of the walls and the surfaces we collected points for
 
                     //world x position:
                     let mut world_x1 =
@@ -173,11 +171,17 @@ impl Renderer {
 
                     //world y position:
                     let mut world_y1 =
-                        y1 as f32 * cosine(player.angle_h) + x1 as f32 * sine(player.angle_h);
+                        y1 as f32 * cosine(player.angle_h) + x1 as f32 * sine(player.angle_h) + 0.1;
                     let mut world_y2 =
-                        y2 as f32 * cosine(player.angle_h) + x2 as f32 * sine(player.angle_h);
+                        y2 as f32 * cosine(player.angle_h) + x2 as f32 * sine(player.angle_h) + 0.1;
                     let mut world_y3 = world_y1;
                     let mut world_y4 = world_y2;
+                    sector.distance += distance(
+                        0.0,
+                        0.0,
+                        (world_x1 + world_x2) / 2.0,
+                        (world_y1 + world_y2) / 2.0,
+                    );
 
                     //world z height:
                     let mut world_z1 = sector.bottom_height as f32 - player.position.z as f32;
@@ -185,9 +189,9 @@ impl Renderer {
                     let mut world_z3 = sector.top_height as f32 - player.position.z as f32;
                     let mut world_z4 = sector.top_height as f32 - player.position.z as f32;
 
-                    if world_y1 < 1.0 && world_y2 < 1.0 {
+                    if world_y1 < 0.0 && world_y2 < 0.0 {
                         continue;
-                    } else if world_y1 < 1.0 {
+                    } else if world_y1 < 0.0 {
                         Self::clip_behind(
                             &mut world_x1,
                             &mut world_y1,
@@ -204,7 +208,7 @@ impl Renderer {
                             world_y4,
                             world_z4,
                         );
-                    } else if world_y2 < 1.0 {
+                    } else if world_y2 < 0.0 {
                         Self::clip_behind(
                             &mut world_x2,
                             &mut world_y2,
@@ -231,8 +235,8 @@ impl Renderer {
                     //screen y:
                     let screen_y1 = world_z1 * 700.0 / world_y1 + HALF_HEIGHT as f32;
                     let screen_y2 = world_z2 * 700.0 / world_y2 + HALF_HEIGHT as f32;
-                    let screen_y3 = world_z3 as f32 * 700.0 / world_y3 + HALF_HEIGHT as f32;
-                    let screen_y4 = world_z4 as f32 * 700.0 / world_y4 + HALF_HEIGHT as f32;
+                    let screen_y3 = world_z3 * 700.0 / world_y3 + HALF_HEIGHT as f32;
+                    let screen_y4 = world_z4 * 700.0 / world_y4 + HALF_HEIGHT as f32;
                     self.draw_wall(
                         screen_x1,
                         screen_x2,
@@ -245,6 +249,7 @@ impl Renderer {
                         &mut sector,
                     )?;
                 }
+                sector.distance /= (sector.wall_end - sector.wall_start) as f32;
             }
         }
         Ok(())
@@ -254,33 +259,34 @@ impl Renderer {
 
     //Clipping Functions:
     pub fn clip_width(n: f32) -> f32 {
-        if n < 1.0 {
+        if n < 0.0 {
             return 1.0;
         }
         if n > SCREEN_WIDTH as f32 {
-            return SCREEN_WIDTH as f32;
+            return SCREEN_WIDTH as f32 - 1.0;
         } else {
             return n;
         }
     } // prevents over drawing horizontally based on screen width
 
     pub fn clip_height(n: f32) -> f32 {
-        if n < 1.0 {
+        if n < 0.0 {
             return 1.0;
         }
         if n > SCREEN_HEIGHT as f32 {
-            return SCREEN_HEIGHT as f32;
+            return SCREEN_HEIGHT as f32 - 1.0;
         } else {
             return n;
         }
     } // prevents over drawing vertically based on screen height
 
     pub fn clip_behind(x1: &mut f32, y1: &mut f32, z1: &mut f32, x2: f32, y2: f32, z2: f32) {
-        let da = *y1;
+        let da = one_if_none(*y1);
         let db = y2;
-        let s = da / one_if_none(da - db);
+        let d = one_if_none(da - db);
+        let s = da / d;
         *x1 = *x1 + s * (x2 - (*x1));
-        *y1 = one_if_none(*y1 + s * (y2 - *y1));
-        *z1 = *z1 + s * (z2 - (*z1));
+        *y1 = one_if_none(*y1 + s * (y2 - (*y1)));
+        *z1 = (*z1 + s * (z2 - (*z1)));
     } //prevents overdrawing behind the player
 }

@@ -5,7 +5,14 @@ use timaeus::renderer::Renderer;
 // git push origin main
 
 fn main() -> Result<(), String> {
-    println!("{:?}", debug::double_degree_test());
+    for n in 0..360 {
+        println!(
+            "number: {:?}, cosine: {:?}, sine:{:?}\n",
+            n,
+            cosine(n),
+            sine(n)
+        );
+    }
     //initialization:
     for i in 0..2 {
         println!("{:?}", i);
