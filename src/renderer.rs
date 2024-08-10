@@ -82,7 +82,7 @@ impl Renderer {
         let difference_x = one_if_none(x2 - x1);
 
         let mut horizontal_texture = 0.0;
-        let h_step = (6.0 / (x1 - x2)).div_euclid(wall.texture.unwrap().width as f32 * 4.0);
+        let h_step = (1.0 / (x1 - x2)).div_euclid(wall.texture.unwrap().width as f32 * 4.0);
 
         //clip x
 
@@ -99,7 +99,7 @@ impl Renderer {
             let y2 = difference_top_y * (x as f32 - xs) / difference_x as f32 + t1;
 
             let mut vertical_texture = 0.0;
-            let v_step = (6.0 / (y1 - y2)).div_euclid(wall.texture.unwrap().height as f32 * 4.0);
+            let v_step = (1.0 / (y1 - y2)).div_euclid(wall.texture.unwrap().height as f32 * 4.0);
 
             //clip y3
 
@@ -136,19 +136,9 @@ impl Renderer {
 
                         self.draw_dot(x as f32, y as f32, pixel_color)?;
                         vertical_texture += v_step as f32;
-
-                        println!(
-                            "vertical texture: {:?} \n",
-                            vertical_texture % wall.texture.unwrap().height as f32
-                        );
                     }
                 }
                 horizontal_texture += h_step as f32;
-
-                println!(
-                    " horizontal texture: {:?} \n",
-                    horizontal_texture % wall.texture.unwrap().width as f32
-                )
             } else if cycle == 1 {
                 let x_offset = SCREEN_WIDTH as f32 / 2.0;
                 let y_offset = SCREEN_HEIGHT as f32 / 2.0;
@@ -181,10 +171,11 @@ impl Renderer {
                         + fy * sine(player.angle_h)
                         + (player.position.x / 60.0 * 3.0);
                     let pixel = (wall.texture.unwrap().height as f32
-                        - (ry % wall.texture.unwrap().height as f32)
-                        - 1.0)
-                        * (wall.texture.unwrap().width as f32
-                            - (rx % wall.texture.unwrap().width as f32));
+                        - (ry % wall.texture.unwrap().height as f32))
+                        - 1.0
+                            * (wall.texture.unwrap().width as f32
+                                - (rx % wall.texture.unwrap().width as f32)
+                                - 1.0);
                     let pixel_bytes = wall.texture.unwrap().data[pixel as usize].to_be_bytes();
                     let pixel_color = Color {
                         r: pixel_bytes[3],
