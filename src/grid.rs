@@ -359,6 +359,7 @@ impl renderer::Renderer {
         grid: &mut Grid,
         font: &sdl2::ttf::Font,
     ) -> Result<(), String> {
+        self.draw_mode = renderer::DrawMode::Draw2D;
         grid.scale = no_less_than_four(grid.scale);
         let scale_width = SCREEN_WIDTH / 160 * grid.scale as usize;
         let scale_height = SCREEN_HEIGHT / 120 * grid.scale as usize;
@@ -472,8 +473,8 @@ impl renderer::Renderer {
         }
 
         self.draw_player(
-            player.position.x + grid.view_shift_x as f32 * grid.scale as f32,
-            player.position.y + grid.view_shift_y as f32 * grid.scale as f32,
+            (player.position.x + grid.view_shift_x as f32) * grid.scale as f32,
+            (player.position.y + grid.view_shift_y as f32) * grid.scale as f32,
             colors::GREEN,
             grid,
             player,

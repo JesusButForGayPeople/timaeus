@@ -38,6 +38,12 @@ pub const BRAT_TEXTURE: Texture = Texture {
     data: &generated_textures::BRAT::BRAT_ARRAY,
 };
 
+pub const ORANGE_TILE_TEXTURE: Texture = Texture {
+    width: generated_textures::ORANGE_TILE::ORANGE_TILE_WIDTH,
+    height: generated_textures::ORANGE_TILE::ORANGE_TILE_HEIGHT,
+    data: &generated_textures::ORANGE_TILE::ORANGE_TILE_ARRAY,
+};
+
 #[derive(Clone, Default, Debug)]
 pub struct XYZ {
     pub x: f32,
@@ -64,8 +70,8 @@ impl PlayerInfo {
         };
         PlayerInfo {
             position: XYZ {
-                x: 400.0,
-                y: 400.0,
+                x: 32.0,
+                y: 32.0,
                 z: 10.0,
             },
             angle_h: 0,

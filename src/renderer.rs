@@ -1,14 +1,24 @@
 use crate::grid::Grid;
 use crate::*;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum DrawMode {
+    Draw2D,
+    Draw3D,
+}
+
 pub struct Renderer {
     pub canvas: Canvas<Window>,
+    pub draw_mode: DrawMode,
 }
 
 impl Renderer {
     pub fn new(window: Window) -> Result<Renderer, String> {
         let canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
-        Ok(Renderer { canvas })
+        Ok(Renderer {
+            canvas,
+            draw_mode: DrawMode::Draw3D,
+        })
     } // Create a new renderer from nuthin!
 
     fn draw_background(&mut self) {
@@ -23,8 +33,11 @@ impl Renderer {
         font: &sdl2::ttf::Font,
     ) -> Result<(), String> {
         self.draw_background();
-        //self.draw2d(player, grid, font)?;
-        self.draw3d(player)?;
+        match self.draw_mode {
+            DrawMode::Draw2D => self.draw2d(player, grid, font)?,
+            DrawMode::Draw3D => self.draw3d(player)?,
+        };
+
         self.canvas.present();
         Ok(())
     } // Top level draw function that runs every tick
@@ -85,7 +98,6 @@ impl Renderer {
         let h_step = (1.0 / (x1 - x2)).div_euclid(wall.texture.unwrap().width as f32 * 4.0);
 
         //clip x
-
         let mut x1_clipped = Self::clip_width(x1);
         let x2_clipped = Self::clip_width(x2);
         if x1 < 0.0 {
@@ -95,8 +107,8 @@ impl Renderer {
         //draw x vertical lines
         for x in (x1_clipped as i32)..(x2_clipped as i32) {
             // the y start and end points
-            let y1 = difference_bottom_y * (x as f32 - xs) / difference_x as f32 + b1;
-            let y2 = difference_top_y * (x as f32 - xs) / difference_x as f32 + t1;
+            let y1 = difference_bottom_y * (x as f32 + 0.5 - xs) / difference_x as f32 + b1;
+            let y2 = difference_top_y * (x as f32 + 0.5 - xs) / difference_x as f32 + t1;
 
             let mut vertical_texture = 0.0;
             let v_step = (1.0 / (y1 - y2)).div_euclid(wall.texture.unwrap().height as f32 * 4.0);
@@ -195,6 +207,7 @@ impl Renderer {
 
     pub fn draw3d(&mut self, player_raw: &mut PlayerInfo) -> Result<(), String> {
         // Master function for the player perspective;
+        self.draw_mode = DrawMode::Draw3D;
         let mut player = PlayerInfo::distances(player_raw);
 
         for s in 0..player.level.number_of_sectors {

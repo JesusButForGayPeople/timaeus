@@ -1,5 +1,6 @@
 use timaeus::grid::*;
-use timaeus::renderer::Renderer;
+
+use timaeus::renderer::{DrawMode::*, Renderer};
 
 // git commit ./
 // git push origin main
@@ -28,6 +29,7 @@ fn main() -> Result<(), String> {
     let mut renderer = Renderer::new(window)?;
 
     'running: loop {
+        println!("draw mode: {:?}", renderer.draw_mode);
         let state = event_pump.mouse_state(); // offset mouse position so that it reflects its position within the actual grid
         let relative_state = event_pump.relative_mouse_state();
         let screen_x = ((state.x()) as f32 / (grid.scale as f32)) - grid.view_shift_x as f32;
@@ -74,16 +76,32 @@ fn main() -> Result<(), String> {
                     Keycode::Escape => Grid::deselect(&mut grid),
                     Keycode::Equals => grid.scale += 1,
                     Keycode::Minus => grid.scale -= 1,
-                    Keycode::Up => PlayerInfo::move_up(&mut player),
-                    Keycode::Left => PlayerInfo::move_left(&mut player),
-                    Keycode::Down => PlayerInfo::move_down(&mut player),
-                    Keycode::Right => PlayerInfo::move_right(&mut player),
+                    Keycode::Up => match renderer.draw_mode {
+                        Draw3D => PlayerInfo::move_up(&mut player),
+                        Draw2D => Grid::view_up(&mut grid),
+                    },
+                    Keycode::Left => match renderer.draw_mode {
+                        Draw3D => PlayerInfo::move_left(&mut player),
+                        Draw2D => Grid::view_left(&mut grid),
+                    },
+                    Keycode::Down => match renderer.draw_mode {
+                        Draw3D => PlayerInfo::move_down(&mut player),
+                        Draw2D => Grid::view_down(&mut grid),
+                    },
+                    Keycode::Right => match renderer.draw_mode {
+                        Draw3D => PlayerInfo::move_right(&mut player),
+                        Draw2D => Grid::view_right(&mut grid),
+                    },
 
                     Keycode::W => PlayerInfo::move_fowward(&mut player),
                     Keycode::A => PlayerInfo::look_left(&mut player),
                     Keycode::S => PlayerInfo::move_backward(&mut player),
                     Keycode::D => PlayerInfo::look_right(&mut player),
                     Keycode::J => save(&mut player),
+                    Keycode::M => match renderer.draw_mode {
+                        Draw3D => renderer.draw_mode = Draw2D,
+                        Draw2D => renderer.draw_mode = Draw3D,
+                    },
                     Keycode::N => Grid::new_sector(&mut grid, &mut player),
                     Keycode::Y => grid.new_sector = true,
                     Keycode::P => {
