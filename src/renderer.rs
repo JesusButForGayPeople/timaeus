@@ -84,7 +84,7 @@ impl Renderer {
         t1: f32,
         t2: f32,
         cycle: u32,
-        color: Color,
+        _color: Color,
         sector: &mut Sector,
         wall: &mut Wall,
     ) -> Result<(), String> {
@@ -121,7 +121,8 @@ impl Renderer {
                 vertical_texture -= v_step as f32 * y1_clipped;
                 y1_clipped = 0.0;
             }
-            let mut draw_color = color;
+            //disable draw color to suppress warning since texture is being drawn instead
+            //let mut draw_color = color;
             //surface
             if cycle == 0 {
                 // on the first pass we collect the points for the surface we want to draw
@@ -160,11 +161,11 @@ impl Renderer {
 
                 if sector.surface == Some(Surface::BottomScan) {
                     y2_clipped = sector.surface_points[x as usize] as f32;
-                    draw_color = sector.bottom_color;
+                    //draw_color = sector.bottom_color;
                 }
                 if sector.surface == Some(Surface::TopScan) {
                     y1_clipped = sector.surface_points[x as usize] as f32;
-                    draw_color = sector.top_color;
+                    //draw_color = sector.top_color;
                 }
 
                 let move_z = (player.position.z - wall_offset) / y_offset;
@@ -378,4 +379,149 @@ impl Renderer {
         *y1 = one_if_none(*y1 + s * (y2 - (*y1)));
         *z1 = *z1 + s * (z2 - (*z1));
     } //prevents overdrawing behind the player
+}
+
+// texture formatter:
+pub fn get_texture<'a>(
+    texture_creator: &'a TextureCreator<WindowContext>,
+    texture_width: u32,
+    texture_height: u32,
+    texture_data: &[u32],
+) -> Result<sdl2::render::Texture<'a>, String> {
+    let mut texture = texture_creator
+        .create_texture_streaming(
+            Some(PixelFormatEnum::RGBA8888),
+            texture_width,
+            texture_height,
+        )
+        .map_err(|e| e.to_string())?;
+
+    texture.with_lock(None, |buffer: &mut [u8], _pitch: usize| {
+        for index in 0..4096 {
+            let bytes = texture_data[index].to_be_bytes();
+            buffer[index * 4] = bytes[0];
+            buffer[index * 4 + 1] = bytes[1];
+            buffer[index * 4 + 2] = bytes[2];
+            buffer[index * 4 + 3] = bytes[3];
+        }
+    })?;
+
+    Ok(texture)
+} // Creates a texture from a given array of u32s
+
+pub fn format_texture(path: String, name: String) -> Result<(), String> {
+    let mut file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(path)
+        .map_err(|e| e.to_string())?;
+
+    let mut generated_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(format!("src/generated_textures/{}.rs", name))
+        .map_err(|e| e.to_string())?;
+
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .map_err(|e| e.to_string())?;
+
+    for (i, big_chunk) in contents.split("#define").enumerate() {
+        if i == 2 {
+            let width = big_chunk
+                .split(" ")
+                .last()
+                .expect("Improper format near width!")
+                .trim()
+                .parse::<u32>()
+                .expect("parse error! (width)");
+            println!("Width: {:?}", width);
+
+            let width_rs = format!("\npub const {}_WIDTH: u32 = {};\n\n", name, width);
+            generated_file
+                .write_all(width_rs.as_bytes())
+                .expect("write error @ width!");
+        }
+        if i == 3 {
+            let chunk = big_chunk.rsplit("{").last().expect("Improper format!");
+            let height = chunk
+                .rsplit("*")
+                .last()
+                .expect("Improper format near height!")
+                .matches(char::is_numeric)
+                .collect::<String>()
+                .parse::<u32>()
+                .expect("parse error! (height)");
+            println!("Height: {:?}", height);
+
+            let height_rs = format!("pub const {}_HEIGHT: u32 = {:?};\n\n", name, height);
+            generated_file
+                .write_all(height_rs.as_bytes())
+                .expect("write error @ height!");
+
+            let name_and_size = chunk
+                .split("*")
+                .last()
+                .expect("Improper format near texture name!")
+                .trim()
+                .split("uint32_t")
+                .last()
+                .expect("Improper format near texture name!");
+
+            let size = name_and_size
+                .split_once("]")
+                .expect("Improper format near size !")
+                .1
+                .matches(char::is_numeric)
+                .collect::<String>()
+                .parse::<u32>()
+                .expect("parse error! (height)");
+            println!("Size: {:?}", size);
+
+            let data = big_chunk
+                .split("{")
+                .last()
+                .expect("Improper {format near data start!")
+                .split(",")
+                .collect::<Vec<&str>>();
+            println!("data: {:?}", data);
+
+            let data_header_rs = format!("pub const {}_ARRAY:[u32; {:?}] = [\n", name, size);
+            generated_file
+                .write_all(data_header_rs.as_bytes())
+                .expect("write error @ array definiton!");
+
+            for pixel in data {
+                let pixel_clean =
+                    pixel.trim_matches(|c| c == ' ' || c == '\n' || c == '}' || c == ';');
+
+                let pixel_clean_rs = format!("{},", pixel_clean);
+                generated_file
+                    .write_all(pixel_clean_rs.as_bytes())
+                    .expect("write error in data!");
+
+                println!("pixel: {:?}", pixel_clean);
+            }
+            generated_file
+                .write_all("\n];".as_bytes())
+                .expect("write error at last line!");
+
+            let mut mod_file = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .append(true)
+                .truncate(false)
+                .open(format!("src/generated_textures/mod.rs"))
+                .map_err(|e| e.to_string())?;
+            mod_file
+                .write_all(format!("pub mod {};\n", name).as_bytes())
+                .expect("write error in mod file!");
+        }
+    }
+    Ok(())
 }

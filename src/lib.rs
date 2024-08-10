@@ -12,13 +12,14 @@ pub use sdl2::{
 pub use std::{
     collections::HashSet,
     fs::{File, OpenOptions},
-    io::Write,
+    io::{Read, Write},
     path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
     vec::Vec,
 };
 pub mod colors;
+#[allow(non_snake_case)]
 pub mod generated_textures;
 pub mod grid;
 pub mod level;
