@@ -3,7 +3,7 @@ pub use sdl2::{
     event::Event,
     keyboard::{Keycode, Mod},
     mouse::{MouseButton, MouseState, MouseWheelDirection},
-    pixels::{Color, PixelFormatEnum},
+    pixels::{Color, PixelFormat, PixelFormatEnum},
     rect::Rect,
     render::{BlendMode, Canvas, TextureCreator},
     ttf::Sdl2TtfContext,
@@ -19,6 +19,7 @@ pub use std::{
     vec::Vec,
 };
 pub mod colors;
+pub mod generated_textures;
 pub mod grid;
 pub mod level;
 pub mod renderer;
@@ -30,6 +31,12 @@ pub const HALF_WIDTH: usize = SCREEN_WIDTH / 2;
 pub const SCREEN_HEIGHT: usize = RESOLUTION * 120;
 pub const HALF_HEIGHT: usize = SCREEN_HEIGHT / 2;
 pub const PIXEL_SCALE: usize = 1;
+
+pub const BRAT_TEXTURE: Texture = Texture {
+    width: generated_textures::BRAT::BRAT_WIDTH,
+    height: generated_textures::BRAT::BRAT_HEIGHT,
+    data: &generated_textures::BRAT::BRAT_ARRAY,
+};
 
 #[derive(Clone, Default, Debug)]
 pub struct XYZ {
@@ -110,11 +117,9 @@ impl PlayerInfo {
     }
     pub fn look_left(player: &mut PlayerInfo) {
         player.angle_h -= 10;
-        println!("angle_h: {}", player.angle_h);
     }
     pub fn look_right(player: &mut PlayerInfo) {
         player.angle_h += 10;
-        println!("angle_h: {}", player.angle_h);
     }
     pub fn move_fowward(player: &mut PlayerInfo) {
         let dx = sine(player.angle_h) * 10.01;
@@ -157,6 +162,9 @@ pub struct Wall {
     pub x2: f32, // last x
     pub y2: f32, // last y
     pub color: Color,
+    pub texture: Option<Texture>,
+    pub u: i32,
+    pub v: i32,
 }
 
 impl Wall {
@@ -188,6 +196,7 @@ pub struct Sector {
     pub bottom_color: Color, // floor color
     pub surface_points: [u32; SCREEN_WIDTH], // used to store the value of the points in the visible surface of a sector which are then used to draw the surface on the next loop
     pub surface: Option<Surface>, // indicates which surface (if any) is currently being drawn
+    pub surface_texture: Option<Texture>, // texture of the surface
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -275,6 +284,9 @@ pub const NEW_SECTOR_WALLS: [Wall; 4] = [
         x2: 32.0,
         y2: 64.0,
         color: colors::CYAN,
+        texture: None,
+        u: 0,
+        v: 0,
     },
     Wall {
         x1: 64.0,
@@ -282,6 +294,9 @@ pub const NEW_SECTOR_WALLS: [Wall; 4] = [
         x2: 32.0,
         y2: 32.0,
         color: colors::DARK_CYAN,
+        texture: None,
+        u: 0,
+        v: 0,
     },
     Wall {
         x1: 64.0,
@@ -289,6 +304,9 @@ pub const NEW_SECTOR_WALLS: [Wall; 4] = [
         x2: 64.0,
         y2: 32.0,
         color: colors::DARK_CYAN,
+        texture: None,
+        u: 0,
+        v: 0,
     },
     Wall {
         x1: 32.0,
@@ -296,6 +314,9 @@ pub const NEW_SECTOR_WALLS: [Wall; 4] = [
         x2: 64.0,
         y2: 64.0,
         color: colors::CYAN,
+        texture: None,
+        u: 0,
+        v: 0,
     },
 ];
 
@@ -305,4 +326,11 @@ pub fn is_even(x: i32) -> bool {
     } else {
         false
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Texture {
+    width: u32,
+    height: u32,
+    data: &'static [u32],
 }

@@ -1,4 +1,4 @@
-pub use crate::{colors, Sector, Surface, Wall};
+pub use crate::{colors, generated_textures, Sector, Surface, Wall};
 pub use sdl2::pixels::Color;
 pub const NUM_SECTORS: usize = 4;
 pub const NUM_WALLS: usize = 16;
@@ -55,6 +55,7 @@ pub const INIT_SECTORS: [Sector; NUM_SECTORS] = [
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ],
+        surface_texture: Some(crate::BRAT_TEXTURE),
     },
     Sector {
         wall_start: 4,
@@ -106,6 +107,7 @@ pub const INIT_SECTORS: [Sector; NUM_SECTORS] = [
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ],
+        surface_texture: Some(crate::BRAT_TEXTURE),
     },
     Sector {
         wall_start: 8,
@@ -157,6 +159,7 @@ pub const INIT_SECTORS: [Sector; NUM_SECTORS] = [
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ],
+        surface_texture: Some(crate::BRAT_TEXTURE),
     },
     Sector {
         wall_start: 12,
@@ -208,6 +211,7 @@ pub const INIT_SECTORS: [Sector; NUM_SECTORS] = [
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ],
+        surface_texture: Some(crate::BRAT_TEXTURE),
     },
 ];
 
@@ -220,6 +224,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 0.0,
         y2: 0.0,
         color: Color::RGBA(227, 30, 35, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 32.0,
@@ -227,6 +234,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 0.0,
         y2: 32.0,
         color: Color::RGBA(142, 0, 4, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 32.0,
@@ -234,6 +244,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 32.0,
         y2: 32.0,
         color: Color::RGBA(142, 0, 4, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 0.0,
@@ -241,6 +254,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 32.0,
         y2: 0.0,
         color: Color::RGBA(227, 30, 35, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 64.0,
@@ -248,6 +264,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 96.0,
         y2: 0.0,
         color: Color::RGBA(229, 114, 30, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 64.0,
@@ -255,6 +274,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 64.0,
         y2: 0.0,
         color: Color::RGBA(229, 114, 30, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 96.0,
@@ -262,6 +284,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 64.0,
         y2: 32.0,
         color: Color::RGBA(143, 61, 0, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 96.0,
@@ -269,6 +294,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 96.0,
         y2: 32.0,
         color: Color::RGBA(143, 61, 0, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 64.0,
@@ -276,6 +304,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 96.0,
         y2: 64.0,
         color: Color::RGBA(154, 214, 28, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 62.75,
@@ -283,6 +314,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 64.0,
         y2: 64.0,
         color: Color::RGBA(154, 214, 28, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 98.75,
@@ -290,6 +324,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 62.75,
         y2: 169.75,
         color: Color::RGBA(91, 134, 0, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 96.0,
@@ -297,6 +334,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 98.75,
         y2: 167.0,
         color: Color::RGBA(91, 134, 0, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 0.0,
@@ -304,6 +344,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 32.0,
         y2: 64.0,
         color: Color::RGBA(34, 70, 153, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 0.0,
@@ -311,6 +354,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 0.0,
         y2: 64.0,
         color: Color::RGBA(34, 70, 153, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 32.0,
@@ -318,6 +364,9 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 0.0,
         y2: 96.0,
         color: Color::RGBA(9, 35, 96, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
     Wall {
         x1: 32.0,
@@ -325,5 +374,8 @@ pub const INIT_WALLS: [Wall; NUM_WALLS] = [
         x2: 32.0,
         y2: 96.0,
         color: Color::RGBA(9, 35, 96, 255),
+        texture: Some(crate::BRAT_TEXTURE),
+        u: 1,
+        v: 1,
     },
 ];

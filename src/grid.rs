@@ -93,6 +93,7 @@ impl Grid {
             bottom_color: colors::BLACK,
             surface_points: [0; SCREEN_WIDTH],
             surface: None,
+            surface_texture: None,
         });
         player.level.number_of_sectors += 1;
     } // creates a new cyan sector in the center of the grid

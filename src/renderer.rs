@@ -63,6 +63,7 @@ impl Renderer {
 
     pub fn draw_wall(
         &mut self,
+        player: &mut PlayerInfo,
         x1: f32,
         x2: f32,
         b1: f32,
@@ -72,24 +73,42 @@ impl Renderer {
         cycle: u32,
         color: Color,
         sector: &mut Sector,
+        wall: &mut Wall,
     ) -> Result<(), String> {
         //hold difference in distance
         let difference_bottom_y = b2 - b1;
         let difference_top_y = t2 - t1;
+        let xs = x1;
         let difference_x = one_if_none(x2 - x1);
 
-        //clip x
-        let x1_clipped = Self::clip_width(x1);
-        let x2_clipped = Self::clip_width(x2);
+        let mut horizontal_texture = 0.0;
+        let h_step = (6.0 / (x1 - x2)).div_euclid(wall.texture.unwrap().width as f32 * 4.0);
 
+        //clip x
+
+        let mut x1_clipped = Self::clip_width(x1);
+        let x2_clipped = Self::clip_width(x2);
+        if x1 < 0.0 {
+            horizontal_texture -= h_step as f32 * x1_clipped;
+            x1_clipped = 0.0;
+        }
         //draw x vertical lines
         for x in (x1_clipped as i32)..(x2_clipped as i32) {
             // the y start and end points
-            let y1 = difference_bottom_y * (x as f32 - x1) / difference_x as f32 + b1;
-            let y2 = difference_top_y * (x as f32 - x1) / difference_x as f32 + t1;
-            //clip y
+            let y1 = difference_bottom_y * (x as f32 - xs) / difference_x as f32 + b1;
+            let y2 = difference_top_y * (x as f32 - xs) / difference_x as f32 + t1;
+
+            let mut vertical_texture = 0.0;
+            let v_step = (6.0 / (y1 - y2)).div_euclid(wall.texture.unwrap().height as f32 * 4.0);
+
+            //clip y3
+
             let mut y1_clipped = Self::clip_height(y1);
             let mut y2_clipped = Self::clip_height(y2);
+            if y1 < 0.0 {
+                vertical_texture -= v_step as f32 * y1_clipped;
+                y1_clipped = 0.0;
+            }
             let mut draw_color = color;
             //surface
             if cycle == 0 {
@@ -100,7 +119,43 @@ impl Renderer {
                 if sector.surface == Some(Surface::TopScan) {
                     sector.surface_points[x as usize] = y2_clipped as u32;
                 } // ceiling points
+                for y in y1_clipped as i32..y2_clipped as i32 {
+                    if wall.texture.is_some() {
+                        let pixel = (wall.texture.unwrap().height as f32
+                            - vertical_texture.rem_euclid(wall.texture.unwrap().height as f32)
+                            - 1.0)
+                            * wall.texture.unwrap().width as f32
+                            - horizontal_texture.rem_euclid(wall.texture.unwrap().width as f32);
+                        let pixel_bytes = wall.texture.unwrap().data[pixel as usize].to_le_bytes();
+                        let pixel_color = Color {
+                            r: pixel_bytes[0],
+                            g: pixel_bytes[1],
+                            b: pixel_bytes[2],
+                            a: pixel_bytes[3],
+                        };
+
+                        self.draw_dot(x as f32, y as f32, pixel_color)?;
+                        vertical_texture += v_step as f32;
+
+                        println!(
+                            "vertical texture: {:?} \n",
+                            vertical_texture % wall.texture.unwrap().height as f32
+                        );
+                    }
+                }
+                horizontal_texture += h_step as f32;
+
+                println!(
+                    " horizontal texture: {:?} \n",
+                    horizontal_texture % wall.texture.unwrap().width as f32
+                )
             } else if cycle == 1 {
+                let x_offset = SCREEN_WIDTH as f32 / 2.0;
+                let y_offset = SCREEN_HEIGHT as f32 / 2.0;
+                let fov = 700.0;
+                let x2 = x - x_offset as i32;
+                let wall_offset = 0.0;
+
                 if sector.surface == Some(Surface::BottomScan) {
                     y2_clipped = sector.surface_points[x as usize] as f32;
                     draw_color = sector.bottom_color;
@@ -109,17 +164,47 @@ impl Renderer {
                     y1_clipped = sector.surface_points[x as usize] as f32;
                     draw_color = sector.top_color;
                 }
+
+                let move_z = (player.position.z - wall_offset) / y_offset;
+                let y_start = y1_clipped - y_offset;
+                let y_end = y2_clipped - y_offset;
+                for y in y_start as u32..y_end as u32 {
+                    let mut z = y as f32;
+                    if z as f32 == 0.0 {
+                        z = 0.0001;
+                    }
+                    let fx = x2_clipped / z * move_z;
+                    let fy = fov / z * move_z;
+                    let rx = fx * sine(player.angle_h) - fy * cosine(player.angle_h)
+                        + (player.position.y / 60.0 * 3.0);
+                    let ry = fx * cosine(player.angle_h)
+                        + fy * sine(player.angle_h)
+                        + (player.position.x / 60.0 * 3.0);
+                    let pixel = (wall.texture.unwrap().height as f32
+                        - (ry % wall.texture.unwrap().height as f32)
+                        - 1.0)
+                        * (wall.texture.unwrap().width as f32
+                            - (rx % wall.texture.unwrap().width as f32));
+                    let pixel_bytes = wall.texture.unwrap().data[pixel as usize].to_be_bytes();
+                    let pixel_color = Color {
+                        r: pixel_bytes[3],
+                        g: pixel_bytes[2],
+                        b: pixel_bytes[1],
+                        a: pixel_bytes[0],
+                    };
+                    self.draw_dot(x2 as f32 + x_offset, y as f32 + y_offset, pixel_color)?;
+                }
             }
-            for y in (y1_clipped as i32)..(y2_clipped as i32) {
-                self.draw_dot(x as f32, y as f32, draw_color)?;
-            }
+            // for y in (y1_clipped as i32)..(y2_clipped as i32) {
+            //     self.draw_dot(x as f32, y as f32, draw_color)?;
+            // }
         }
         Ok(())
     } // Draws a given wall in 3D perspective accounting for player position
 
     pub fn draw3d(&mut self, player_raw: &mut PlayerInfo) -> Result<(), String> {
         // Master function for the player perspective;
-        let player = PlayerInfo::distances(player_raw);
+        let mut player = PlayerInfo::distances(player_raw);
 
         for s in 0..player.level.number_of_sectors {
             // draws sectors/walls from level.rs in 3D as the player sees it
@@ -144,7 +229,7 @@ impl Renderer {
 
             for cycle in 0..number_of_cycles {
                 for w in sector.wall_start..sector.wall_end {
-                    let wall = player.level.walls[w as usize];
+                    let mut wall = player.level.walls[w as usize];
                     let color = wall.color;
                     //oftset bottom 2 points by player:
                     let mut x1 = wall.x1 - player.position.x;
@@ -229,8 +314,6 @@ impl Renderer {
                     //screen x:
                     let screen_x1 = world_x1 * 700.0 / world_y1 + HALF_WIDTH as f32;
                     let screen_x2 = world_x2 * 700.0 / world_y2 + HALF_WIDTH as f32;
-                    let screen_x3 = world_x3 * 700.0 / world_y3 + HALF_WIDTH as f32;
-                    let screen_x4 = world_x4 * 700.0 / world_y4 + HALF_WIDTH as f32;
 
                     //screen y:
                     let screen_y1 = world_z1 * 700.0 / world_y1 + HALF_HEIGHT as f32;
@@ -238,6 +321,7 @@ impl Renderer {
                     let screen_y3 = world_z3 * 700.0 / world_y3 + HALF_HEIGHT as f32;
                     let screen_y4 = world_z4 * 700.0 / world_y4 + HALF_HEIGHT as f32;
                     self.draw_wall(
+                        &mut player,
                         screen_x1,
                         screen_x2,
                         screen_y1,
@@ -247,6 +331,7 @@ impl Renderer {
                         cycle,
                         color,
                         &mut sector,
+                        &mut wall,
                     )?;
                 }
                 sector.distance /= (sector.wall_end - sector.wall_start) as f32;
@@ -287,6 +372,6 @@ impl Renderer {
         let s = da / d;
         *x1 = *x1 + s * (x2 - (*x1));
         *y1 = one_if_none(*y1 + s * (y2 - (*y1)));
-        *z1 = (*z1 + s * (z2 - (*z1)));
+        *z1 = *z1 + s * (z2 - (*z1));
     } //prevents overdrawing behind the player
 }

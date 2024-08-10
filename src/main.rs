@@ -5,21 +5,10 @@ use timaeus::renderer::Renderer;
 // git push origin main
 
 fn main() -> Result<(), String> {
-    for n in 0..360 {
-        println!(
-            "number: {:?}, cosine: {:?}, sine:{:?}\n",
-            n,
-            cosine(n),
-            sine(n)
-        );
-    }
     //initialization:
-    for i in 0..2 {
-        println!("{:?}", i);
-    }
 
     let sdl_context = sdl2::init()?;
-    let frame_duration = Duration::new(0, 1_000_000_000u32 / 60);
+    let frame_duration = Duration::new(0, 1_000_000_000u32 / 30);
     let mut frame_count = 0;
     let video_subsystem = sdl_context.video()?;
     let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
