@@ -168,7 +168,7 @@ impl Renderer {
                     let x2 = x - x_offset as i32;
                     let wall_offset = 0.0;
 
-                    let move_z = (player.position.z - wall_offset) / y_offset;
+                    let move_z = (player.position.z as f32 - wall_offset) / y_offset;
                     let y_start = y1_clipped - y_offset;
                     let y_end = y2_clipped - y_offset;
                     for y in y_start as u32..y_end as u32 {
@@ -179,10 +179,10 @@ impl Renderer {
                         let fx = x2_clipped / z * move_z;
                         let fy = fov / z * move_z;
                         let rx = fx * sine(player.angle_h) - fy * cosine(player.angle_h)
-                            + (player.position.y / 60.0 * 3.0);
+                            + (player.position.y / 60 * 3) as f32;
                         let ry = fx * cosine(player.angle_h)
                             + fy * sine(player.angle_h)
-                            + (player.position.x / 60.0 * 3.0);
+                            + (player.position.x / 60 * 3) as f32;
                         let pixel = (wall.texture.unwrap().height as f32
                             - (ry.trunc() % wall.texture.unwrap().height as f32))
                             - 1.0
@@ -221,13 +221,13 @@ impl Renderer {
             let mut sector = player.level.sectors[s as usize];
             sector.distance = 0.0;
             let mut number_of_cycles = 1;
-            if player.position.z < sector.bottom_height as f32 {
+            if player.position.z < sector.bottom_height {
                 sector.surface = Some(Surface::BottomScan); // if the player is below the bottom of the sector we collect the floor points
                 number_of_cycles += 1;
                 for x in 0..SCREEN_WIDTH {
                     sector.surface_points[x] = SCREEN_HEIGHT as u32;
                 } // in the event that one of the walls isnt drawn we fill the missing surface with the bottom color
-            } else if player.position.z > sector.top_height as f32 {
+            } else if player.position.z > sector.top_height {
                 sector.surface = Some(Surface::TopScan); // if the player is above the top of the sector we collect the ceiling points
                 number_of_cycles += 1;
                 for x in 0..SCREEN_WIDTH {
@@ -242,10 +242,10 @@ impl Renderer {
                     let mut wall = player.level.walls[w as usize];
                     let color = wall.color;
                     //oftset bottom 2 points by player:
-                    let mut x1 = wall.x1 - player.position.x;
-                    let mut y1 = wall.y1 - player.position.y;
-                    let mut x2 = wall.x2 - player.position.x;
-                    let mut y2 = wall.y2 - player.position.y;
+                    let mut x1 = wall.x1 as i32 - player.position.x;
+                    let mut y1 = wall.y1 as i32 - player.position.y;
+                    let mut x2 = wall.x2 as i32 - player.position.x;
+                    let mut y2 = wall.y2 as i32 - player.position.y;
 
                     if cycle == 1 {
                         let swapx = x1;

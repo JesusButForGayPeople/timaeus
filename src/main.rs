@@ -9,7 +9,7 @@ fn main() -> Result<(), String> {
     //initialization:
     let sdl_context = sdl2::init()?;
     let frame_duration = Duration::new(0, 1_000_000_000u32 / 30);
-    let mut frame_count = 0;
+    let mut _frame_count = 0;
     let video_subsystem = sdl_context.video()?;
     let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
     let font_path: &Path = Path::new(&"fonts/BigBlueTermPlusNerdFont-Regular.ttf");
@@ -19,8 +19,6 @@ fn main() -> Result<(), String> {
     let mut grid = Grid::new();
     grid.selection = Selection::from_level(&player.level);
     let mut debug2: Option<Debug> = None;
-    let mut player_clone = player.clone();
-    let mut grid_clone = grid.clone();
 
     let window = video_subsystem
         .window("Timaeus W.I.P.", SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32)
@@ -58,6 +56,95 @@ fn main() -> Result<(), String> {
                             grid.highlight_x = Some(x);
                             grid.highlight_y = Some(y)
                         }
+
+                        if grid.selected_sector.is_some() {
+                            if grid.selected_wall.is_some() {
+                                // next texture with left mouse by clicking on preview with left mouse
+                                if state.y() >= 735 && state.y() <= 825 {
+                                    if state.x() >= 445 && state.x() <= 535 {
+                                        Wall::next_texture(
+                                            &mut player.level.walls[grid.selected_wall.unwrap()],
+                                        )
+                                    }
+                                }
+                            }
+                            // floor height plus and minus 1 with left mouse
+                            if state.y() >= 770 && state.y() <= 795 {
+                                if state.x() >= 150 && state.x() <= 175 {
+                                    player.level.sectors[grid.selected_sector.unwrap()]
+                                        .bottom_height += 1;
+                                }
+                                if state.x() >= 190 && state.x() <= 215 {
+                                    player.level.sectors[grid.selected_sector.unwrap()]
+                                        .bottom_height -= 1;
+                                }
+                            }
+                            // ceiling  height plus and minus 1 with left mouse
+                            if state.y() >= 790 && state.y() <= 815 {
+                                if state.x() >= 160 && state.x() <= 185 {
+                                    player.level.sectors[grid.selected_sector.unwrap()]
+                                        .top_height += 1;
+                                }
+                                if state.x() >= 190 && state.x() <= 215 {
+                                    player.level.sectors[grid.selected_sector.unwrap()]
+                                        .top_height -= 1;
+                                }
+                            }
+                            // wall u plus and minus 1 with left mouse
+                            if state.y() >= 770 && state.y() <= 795 {
+                                if state.x() >= 370 && state.x() <= 395 {
+                                    player.level.walls[grid.selected_wall.unwrap()].u += 1.0;
+                                }
+                                if state.x() >= 400 && state.x() <= 425 {
+                                    player.level.walls[grid.selected_wall.unwrap()].u -= 1.0;
+                                }
+                            }
+                            //wall v plus and minus 1 with left mouse
+                            if state.y() >= 790 && state.y() <= 815 {
+                                if state.x() >= 370 && state.x() <= 395 {
+                                    player.level.walls[grid.selected_wall.unwrap()].v += 1.0;
+                                }
+                                if state.x() >= 400 && state.x() <= 425 {
+                                    player.level.walls[grid.selected_wall.unwrap()].v -= 1.0;
+                                }
+                            }
+                        }
+                    }
+                    if mouse_btn == MouseButton::Right {
+                        if grid.selected_sector.is_some() {
+                            if grid.selected_wall.is_some() {
+                                // prev texture with left mouse by clicking on preview with right mouse
+                                if state.y() >= 735 && state.y() <= 825 {
+                                    if state.x() >= 445 && state.x() <= 535 {
+                                        Wall::prev_texture(
+                                            &mut player.level.walls[grid.selected_wall.unwrap()],
+                                        )
+                                    }
+                                }
+                            }
+                            // floor height plus and minus 10 with right mouse
+                            if state.y() >= 770 && state.y() <= 795 {
+                                if state.x() >= 160 && state.x() <= 185 {
+                                    player.level.sectors[grid.selected_sector.unwrap()]
+                                        .bottom_height += 10;
+                                }
+                                if state.x() >= 190 && state.x() <= 215 {
+                                    player.level.sectors[grid.selected_sector.unwrap()]
+                                        .bottom_height -= 10;
+                                }
+                            }
+                            // ceiling height plus and minus 10 with right mouse
+                            if state.y() >= 790 && state.y() <= 815 {
+                                if state.x() >= 160 && state.x() <= 185 {
+                                    player.level.sectors[grid.selected_sector.unwrap()]
+                                        .top_height += 10;
+                                }
+                                if state.x() >= 190 && state.x() <= 215 {
+                                    player.level.sectors[grid.selected_sector.unwrap()]
+                                        .top_height -= 10;
+                                }
+                            }
+                        }
                     }
                 }
                 Event::MouseButtonUp { mouse_btn, .. } => {
@@ -94,7 +181,10 @@ fn main() -> Result<(), String> {
                         Draw2D => Grid::view_right(&mut grid),
                     },
 
-                    Keycode::W => PlayerInfo::move_fowward(&mut player),
+                    Keycode::W => match renderer.draw_mode {
+                        Draw3D => PlayerInfo::move_fowward(&mut player),
+                        Draw2D => Grid::next_wall(&mut grid, &mut player),
+                    },
                     Keycode::A => PlayerInfo::look_left(&mut player),
                     Keycode::S => PlayerInfo::move_backward(&mut player),
                     Keycode::D => PlayerInfo::look_right(&mut player),
@@ -147,222 +237,207 @@ fn main() -> Result<(), String> {
                         } // is then used to render the little white selection cirlces on all of the points in selection.points
                     }
                 }
+                if grid.mouse_status.button == Some(Button::Left) && grid.state == State::Free {
+                    if wall_number + 1 < player.level.sectors[sector as usize].wall_end {
+                        let wall = wall_number as usize; // this massive set of control flow statements is what dictates which points are moved when a vertex is clicked on
+                        let next = (wall + 1) as usize; // since the selected wall does not repeat automatically if the last wall of a sector was selected
 
-                if wall_number + 1 < player.level.sectors[sector as usize].wall_end {
-                    let wall = wall_number as usize; // this massive set of control flow statements is what dictates which points are moved when a vertex is clicked on
-                    let next = (wall + 1) as usize; // since the selected wall does not repeat automatically if the last wall of a sector was selected
-
-                    if distance(
-                        grid.mouse_status.mouse_x as f32, // a shorter statement would allow you to drag the point from the next sector along with the intended point
-                        grid.mouse_status.mouse_y as f32, // thus, since each wall has two points there is eight cases to cover all possible combinations of points
-                        wall_point(&mut player, &mut grid, wall, 1)?.0, // ...  and to account for the number of walls in the sector
-                        wall_point(&mut player, &mut grid, wall, 1)?.1,
-                    ) <= 8.0
-                        && distance(
-                            grid.mouse_status.mouse_x as f32,
-                            grid.mouse_status.mouse_y as f32,
-                            wall_point(&mut player, &mut grid, next, 2)?.0,
-                            wall_point(&mut player, &mut grid, next, 2)?.1,
+                        if distance(
+                            grid.mouse_status.mouse_x as f32, // a shorter statement would allow you to drag the point from the next sector along with the intended point
+                            grid.mouse_status.mouse_y as f32, // thus, since each wall has two points there is eight cases to cover all possible combinations of points
+                            wall_point(&mut player, &mut grid, wall, 1)?.0, // ...  and to account for the number of walls in the sector
+                            wall_point(&mut player, &mut grid, wall, 1)?.1,
                         ) <= 8.0
-                        && grid.mouse_status.button == Some(Button::Left)
-                        && grid.state == State::Free
-                    {
-                        if grid.selection.points.is_empty() {
-                            grid.highlight_x = None;
-                            grid.highlight_y = None;
+                            && distance(
+                                grid.mouse_status.mouse_x as f32,
+                                grid.mouse_status.mouse_y as f32,
+                                wall_point(&mut player, &mut grid, next, 2)?.0,
+                                wall_point(&mut player, &mut grid, next, 2)?.1,
+                            ) <= 8.0
+                        {
+                            if grid.selection.points.is_empty() {
+                                grid.highlight_x = None;
+                                grid.highlight_y = None;
 
-                            grid.state = State::Busy;
+                                grid.state = State::Busy;
 
-                            grid.selected_sector = Some(sector as usize);
-                            grid.selected_wall = Some(wall_number as usize);
-                            grid.selected_point = Some(1);
+                                grid.selected_sector = Some(sector as usize);
+                                grid.selected_wall = Some(wall_number as usize);
+                                grid.selected_point = Some(1);
+                            }
                         }
-                    }
-                    if distance(
-                        grid.mouse_status.mouse_x as f32,
-                        grid.mouse_status.mouse_y as f32,
-                        wall_point(&mut player, &mut grid, wall, 1)?.0,
-                        wall_point(&mut player, &mut grid, wall, 1)?.1,
-                    ) <= 8.0
-                        && distance(
+                        if distance(
                             grid.mouse_status.mouse_x as f32,
                             grid.mouse_status.mouse_y as f32,
-                            wall_point(&mut player, &mut grid, next, 1)?.0,
-                            wall_point(&mut player, &mut grid, next, 1)?.1,
+                            wall_point(&mut player, &mut grid, wall, 1)?.0,
+                            wall_point(&mut player, &mut grid, wall, 1)?.1,
                         ) <= 8.0
-                        && grid.mouse_status.button == Some(Button::Left)
-                        && grid.state == State::Free
-                    {
-                        if grid.selection.points.is_empty() {
-                            grid.highlight_x = None;
-                            grid.highlight_y = None;
+                            && distance(
+                                grid.mouse_status.mouse_x as f32,
+                                grid.mouse_status.mouse_y as f32,
+                                wall_point(&mut player, &mut grid, next, 1)?.0,
+                                wall_point(&mut player, &mut grid, next, 1)?.1,
+                            ) <= 8.0
+                        {
+                            if grid.selection.points.is_empty() {
+                                grid.highlight_x = None;
+                                grid.highlight_y = None;
 
-                            grid.state = State::Busy;
+                                grid.state = State::Busy;
 
-                            grid.selected_sector = Some(sector as usize);
-                            grid.selected_wall = Some(wall_number as usize);
+                                grid.selected_sector = Some(sector as usize);
+                                grid.selected_wall = Some(wall_number as usize);
 
-                            grid.selected_point = Some(2);
+                                grid.selected_point = Some(2);
+                            }
                         }
-                    }
-                    if distance(
-                        grid.mouse_status.mouse_x as f32,
-                        grid.mouse_status.mouse_y as f32,
-                        wall_point(&mut player, &mut grid, wall, 2)?.0,
-                        wall_point(&mut player, &mut grid, wall, 2)?.1,
-                    ) <= 8.0
-                        && distance(
+                        if distance(
                             grid.mouse_status.mouse_x as f32,
                             grid.mouse_status.mouse_y as f32,
-                            wall_point(&mut player, &mut grid, next, 1)?.0,
-                            wall_point(&mut player, &mut grid, next, 1)?.1,
+                            wall_point(&mut player, &mut grid, wall, 2)?.0,
+                            wall_point(&mut player, &mut grid, wall, 2)?.1,
                         ) <= 8.0
-                        && grid.mouse_status.button == Some(Button::Left)
-                        && grid.state == State::Free
-                    {
-                        if grid.selection.points.is_empty() {
-                            grid.highlight_x = None;
-                            grid.highlight_y = None;
+                            && distance(
+                                grid.mouse_status.mouse_x as f32,
+                                grid.mouse_status.mouse_y as f32,
+                                wall_point(&mut player, &mut grid, next, 1)?.0,
+                                wall_point(&mut player, &mut grid, next, 1)?.1,
+                            ) <= 8.0
+                        {
+                            if grid.selection.points.is_empty() {
+                                grid.highlight_x = None;
+                                grid.highlight_y = None;
 
-                            grid.state = State::Busy;
+                                grid.state = State::Busy;
 
-                            grid.selected_sector = Some(sector as usize);
-                            grid.selected_wall = Some(wall_number as usize);
-                            grid.selected_point = Some(3);
+                                grid.selected_sector = Some(sector as usize);
+                                grid.selected_wall = Some(wall_number as usize);
+                                grid.selected_point = Some(3);
+                            }
                         }
-                    }
-                    if distance(
-                        grid.mouse_status.mouse_x as f32,
-                        grid.mouse_status.mouse_y as f32,
-                        wall_point(&mut player, &mut grid, wall, 2)?.0,
-                        wall_point(&mut player, &mut grid, wall, 2)?.1,
-                    ) <= 8.0
-                        && distance(
+                        if distance(
                             grid.mouse_status.mouse_x as f32,
                             grid.mouse_status.mouse_y as f32,
-                            wall_point(&mut player, &mut grid, next, 2)?.0,
-                            wall_point(&mut player, &mut grid, next, 2)?.1,
+                            wall_point(&mut player, &mut grid, wall, 2)?.0,
+                            wall_point(&mut player, &mut grid, wall, 2)?.1,
                         ) <= 8.0
-                        && grid.mouse_status.button == Some(Button::Left)
-                        && grid.state == State::Free
-                    {
-                        if grid.selection.points.is_empty() {
-                            grid.highlight_x = None;
-                            grid.highlight_y = None;
+                            && distance(
+                                grid.mouse_status.mouse_x as f32,
+                                grid.mouse_status.mouse_y as f32,
+                                wall_point(&mut player, &mut grid, next, 2)?.0,
+                                wall_point(&mut player, &mut grid, next, 2)?.1,
+                            ) <= 8.0
+                        {
+                            if grid.selection.points.is_empty() {
+                                grid.highlight_x = None;
+                                grid.highlight_y = None;
 
-                            grid.state = State::Busy;
+                                grid.state = State::Busy;
 
-                            grid.selected_sector = Some(sector as usize);
-                            grid.selected_wall = Some(wall_number as usize);
-                            grid.selected_point = Some(4);
+                                grid.selected_sector = Some(sector as usize);
+                                grid.selected_wall = Some(wall_number as usize);
+                                grid.selected_point = Some(4);
+                            }
                         }
-                    }
-                } else if wall_number + 1 == player.level.sectors[sector as usize].wall_end {
-                    let wall = wall_number as usize;
-                    let next = player.level.sectors[sector as usize].wall_start as usize;
+                    } else if wall_number + 1 == player.level.sectors[sector as usize].wall_end {
+                        let wall = wall_number as usize;
+                        let next = player.level.sectors[sector as usize].wall_start as usize;
 
-                    if distance(
-                        grid.mouse_status.mouse_x as f32,
-                        grid.mouse_status.mouse_y as f32,
-                        wall_point(&mut player, &mut grid, wall, 1)?.0,
-                        wall_point(&mut player, &mut grid, wall, 1)?.1,
-                    ) <= 8.0
-                        && distance(
+                        if distance(
                             grid.mouse_status.mouse_x as f32,
                             grid.mouse_status.mouse_y as f32,
-                            wall_point(&mut player, &mut grid, next, 2)?.0,
-                            wall_point(&mut player, &mut grid, next, 2)?.1,
+                            wall_point(&mut player, &mut grid, wall, 1)?.0,
+                            wall_point(&mut player, &mut grid, wall, 1)?.1,
                         ) <= 8.0
-                        && grid.mouse_status.button == Some(Button::Left)
-                        && grid.state == State::Free
-                    {
-                        if grid.selection.points.is_empty() {
-                            grid.highlight_x = None;
-                            grid.highlight_y = None;
+                            && distance(
+                                grid.mouse_status.mouse_x as f32,
+                                grid.mouse_status.mouse_y as f32,
+                                wall_point(&mut player, &mut grid, next, 2)?.0,
+                                wall_point(&mut player, &mut grid, next, 2)?.1,
+                            ) <= 8.0
+                        {
+                            if grid.selection.points.is_empty() {
+                                grid.highlight_x = None;
+                                grid.highlight_y = None;
 
-                            grid.state = State::Busy;
+                                grid.state = State::Busy;
 
-                            grid.selected_sector = Some(sector as usize);
-                            grid.selected_wall = Some(wall_number as usize);
-                            grid.selected_point = Some(5);
+                                grid.selected_sector = Some(sector as usize);
+                                grid.selected_wall = Some(wall_number as usize);
+                                grid.selected_point = Some(5);
+                            }
                         }
-                    }
-                    if distance(
-                        grid.mouse_status.mouse_x as f32,
-                        grid.mouse_status.mouse_y as f32,
-                        wall_point(&mut player, &mut grid, wall, 1)?.0,
-                        wall_point(&mut player, &mut grid, wall, 1)?.1,
-                    ) <= 8.0
-                        && distance(
+                        if distance(
                             grid.mouse_status.mouse_x as f32,
                             grid.mouse_status.mouse_y as f32,
-                            wall_point(&mut player, &mut grid, next, 1)?.0,
-                            wall_point(&mut player, &mut grid, next, 1)?.1,
+                            wall_point(&mut player, &mut grid, wall, 1)?.0,
+                            wall_point(&mut player, &mut grid, wall, 1)?.1,
                         ) <= 8.0
-                        && grid.mouse_status.button == Some(Button::Left)
-                        && grid.state == State::Free
-                    {
-                        if grid.selection.points.is_empty() {
-                            grid.highlight_x = None;
-                            grid.highlight_y = None;
+                            && distance(
+                                grid.mouse_status.mouse_x as f32,
+                                grid.mouse_status.mouse_y as f32,
+                                wall_point(&mut player, &mut grid, next, 1)?.0,
+                                wall_point(&mut player, &mut grid, next, 1)?.1,
+                            ) <= 8.0
+                        {
+                            if grid.selection.points.is_empty() {
+                                grid.highlight_x = None;
+                                grid.highlight_y = None;
 
-                            grid.state = State::Busy;
+                                grid.state = State::Busy;
 
-                            grid.selected_sector = Some(sector as usize);
-                            grid.selected_wall = Some(wall_number as usize);
-                            grid.selected_point = Some(6);
+                                grid.selected_sector = Some(sector as usize);
+                                grid.selected_wall = Some(wall_number as usize);
+                                grid.selected_point = Some(6);
+                            }
                         }
-                    }
-                    if distance(
-                        grid.mouse_status.mouse_x as f32,
-                        grid.mouse_status.mouse_y as f32,
-                        wall_point(&mut player, &mut grid, wall, 2)?.0,
-                        wall_point(&mut player, &mut grid, wall, 2)?.1,
-                    ) <= 8.0
-                        && distance(
+                        if distance(
                             grid.mouse_status.mouse_x as f32,
                             grid.mouse_status.mouse_y as f32,
-                            wall_point(&mut player, &mut grid, next, 1)?.0,
-                            wall_point(&mut player, &mut grid, next, 1)?.1,
+                            wall_point(&mut player, &mut grid, wall, 2)?.0,
+                            wall_point(&mut player, &mut grid, wall, 2)?.1,
                         ) <= 8.0
-                        && grid.mouse_status.button == Some(Button::Left)
-                        && grid.state == State::Free
-                    {
-                        if grid.selection.points.is_empty() {
-                            grid.highlight_x = None;
-                            grid.highlight_y = None;
+                            && distance(
+                                grid.mouse_status.mouse_x as f32,
+                                grid.mouse_status.mouse_y as f32,
+                                wall_point(&mut player, &mut grid, next, 1)?.0,
+                                wall_point(&mut player, &mut grid, next, 1)?.1,
+                            ) <= 8.0
+                        {
+                            if grid.selection.points.is_empty() {
+                                grid.highlight_x = None;
+                                grid.highlight_y = None;
 
-                            grid.state = State::Busy;
+                                grid.state = State::Busy;
 
-                            grid.selected_sector = Some(sector as usize);
-                            grid.selected_wall = Some(wall_number as usize);
-                            grid.selected_point = Some(7);
+                                grid.selected_sector = Some(sector as usize);
+                                grid.selected_wall = Some(wall_number as usize);
+                                grid.selected_point = Some(7);
+                            }
                         }
-                    }
-                    if distance(
-                        grid.mouse_status.mouse_x as f32,
-                        grid.mouse_status.mouse_y as f32,
-                        wall_point(&mut player, &mut grid, wall, 2)?.0,
-                        wall_point(&mut player, &mut grid, wall, 2)?.1,
-                    ) <= 8.0
-                        && distance(
+                        if distance(
                             grid.mouse_status.mouse_x as f32,
                             grid.mouse_status.mouse_y as f32,
-                            wall_point(&mut player, &mut grid, next, 2)?.0,
-                            wall_point(&mut player, &mut grid, next, 2)?.1,
+                            wall_point(&mut player, &mut grid, wall, 2)?.0,
+                            wall_point(&mut player, &mut grid, wall, 2)?.1,
                         ) <= 8.0
-                        && grid.mouse_status.button == Some(Button::Left)
-                        && grid.state == State::Free
-                    {
-                        if grid.selection.points.is_empty() {
-                            grid.highlight_x = None;
-                            grid.highlight_y = None;
+                            && distance(
+                                grid.mouse_status.mouse_x as f32,
+                                grid.mouse_status.mouse_y as f32,
+                                wall_point(&mut player, &mut grid, next, 2)?.0,
+                                wall_point(&mut player, &mut grid, next, 2)?.1,
+                            ) <= 8.0
+                        {
+                            if grid.selection.points.is_empty() {
+                                grid.highlight_x = None;
+                                grid.highlight_y = None;
 
-                            grid.state = State::Busy;
+                                grid.state = State::Busy;
 
-                            grid.selected_sector = Some(sector as usize);
-                            grid.selected_wall = Some(wall_number as usize);
-                            grid.selected_point = Some(8);
+                                grid.selected_sector = Some(sector as usize);
+                                grid.selected_wall = Some(wall_number as usize);
+                                grid.selected_point = Some(8);
+                            }
                         }
                     }
                 }
@@ -436,9 +511,9 @@ fn main() -> Result<(), String> {
             _ => {}
         }
 
-        frame_count += 1;
-        player_clone = player.clone();
-        grid_clone = grid.clone();
+        _frame_count += 1;
+        let player_clone = player.clone();
+        let grid_clone = grid.clone();
         if debug2.is_some() {
             debug2 = Some(debug(player_clone, grid_clone, Some(debug2.unwrap())));
         } else {

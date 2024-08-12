@@ -62,7 +62,7 @@ impl Grid {
     } // gets the mouse.state from the SDL event pump
 
     pub fn deselect(&mut self) {
-        self.selected_wall = None;
+        //self.selected_wall = None;
         //self.selected_sector = None;
         self.selected_point = None;
     } // deselects all points, walls, & sectors; called every frame that the left mouse button is not pressed
@@ -80,8 +80,80 @@ impl Grid {
         self.view_shift_x -= 10
     }
 
+    pub fn next_wall(&mut self, player: &mut PlayerInfo) {
+        match self.selected_wall {
+            Some(wall) => {
+                if wall >= player.level.number_of_walls as usize - 1 {
+                    self.selected_wall = Some(0);
+                } else {
+                    self.selected_wall = Some(wall + 1);
+                }
+            }
+            _ => self.selected_wall = Some(0),
+        }
+    }
+
     pub fn new_sector(&mut self, player: &mut PlayerInfo) {
-        player.level.walls.append(&mut NEW_SECTOR_WALLS.to_vec());
+        let random_color_number = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .subsec_nanos()
+            % 9;
+        let new_color = match random_color_number {
+            0 => colors::RED,
+            1 => colors::GREEN,
+            2 => colors::BLUE,
+            3 => colors::YELLOW,
+            4 => colors::CYAN,
+            5 => colors::PURPLE,
+            6 => colors::BROWN,
+            7 => colors::PINK,
+            8 => colors::ORANGE,
+            _ => colors::BLACK,
+        };
+        let new_sector_walls: [Wall; 4] = [
+            Wall {
+                x1: 32.0,
+                y1: 32.0,
+                x2: 32.0,
+                y2: 64.0,
+                color: new_color,
+                texture: Some(textures::BRAT_TEXTURE),
+                u: 1.0,
+                v: 1.0,
+            },
+            Wall {
+                x1: 64.0,
+                y1: 32.0,
+                x2: 32.0,
+                y2: 32.0,
+                color: new_color,
+                texture: Some(textures::BRAT_TEXTURE),
+                u: 1.0,
+                v: 1.0,
+            },
+            Wall {
+                x1: 64.0,
+                y1: 64.0,
+                x2: 64.0,
+                y2: 32.0,
+                color: new_color,
+                texture: Some(textures::BRAT_TEXTURE),
+                u: 1.0,
+                v: 1.0,
+            },
+            Wall {
+                x1: 32.0,
+                y1: 64.0,
+                x2: 64.0,
+                y2: 64.0,
+                color: new_color,
+                texture: Some(textures::BRAT_TEXTURE),
+                u: 1.0,
+                v: 1.0,
+            },
+        ];
+        player.level.walls.append(&mut new_sector_walls.to_vec());
         player.level.number_of_walls += 4;
         player.level.sectors.push(Sector {
             wall_start: player.level.number_of_walls as i32 - 4,
@@ -188,7 +260,7 @@ pub fn save(player: &mut PlayerInfo) -> () {
         .expect("Failed to read level.rs loser!");
 
     let header = format!(
-        "pub use sdl2::pixels::Color;\npub use crate::{{colors, Sector, Surface, Wall}};\npub const NUM_SECTORS: usize = {:?}; \npub const NUM_WALLS: usize = {:?};\n\n//SECTORS:\npub const INIT_SECTORS: [Sector; NUM_SECTORS] = [",
+        "pub use sdl2::pixels::Color;\npub use crate::{{colors, textures, Sector, Surface, Wall}};\npub const NUM_SECTORS: usize = {:?}; \npub const NUM_WALLS: usize = {:?};\n\n//SECTORS:\npub const INIT_SECTORS: [Sector; NUM_SECTORS] = [",
         player.level.number_of_sectors, player.level.number_of_walls
     );
     file.write_all(header.as_bytes())
@@ -196,7 +268,7 @@ pub fn save(player: &mut PlayerInfo) -> () {
 
     for s in 0..player.level.number_of_sectors {
         let sector = format!(
-            "Sector{{\n wall_start:{:?},\n wall_end:{:?},\n bottom_height:{:?},\n top_height:{:?},\n distance:{:?},\n top_color:Color::RGBA{:?},\n bottom_color:Color::RGBA{:?},\n surface:{:?},\n surface_points:{:?},\n}},\n",
+            "Sector{{\n wall_start:{:?},\n wall_end:{:?},\n bottom_height:{:?},\n top_height:{:?},\n distance:{:?},\n top_color:Color::RGBA{:?},\n bottom_color:Color::RGBA{:?},\n surface:{:?},\n surface_points:[0; crate::SCREEN_WIDTH],\n surface_texture:Some(textures::{})\n}},\n\n",
             player.level.sectors[s as usize].wall_start,
             player.level.sectors[s as usize].wall_end,
             player.level.sectors[s as usize].bottom_height,
@@ -205,7 +277,12 @@ pub fn save(player: &mut PlayerInfo) -> () {
             player.level.sectors[s as usize].top_color.rgba(),
             player.level.sectors[s as usize].bottom_color.rgba(),
             player.level.sectors[s as usize].surface,
-            player.level.sectors[s as usize].surface_points,
+            //player.level.sectors[s as usize].surface_points,
+            match player.level.sectors[s as usize].surface_texture {
+                Some(texture) => texture.name,
+                _ => "None"
+            },
+
         );
         file.write_all(sector.as_bytes())
             .expect("Unable to write your data loser!");
@@ -219,12 +296,15 @@ pub fn save(player: &mut PlayerInfo) -> () {
         let x2 = player.level.walls[w as usize].x2;
         let y2 = player.level.walls[w as usize].y2;
         let wall = format!(
-            "Wall{{\n x1:{:?},\n y1:{:?},\n x2:{:?},\n y2:{:?},\n color:Color::RGBA{:?},\n}},\n",
+            "Wall{{\n x1:{:?},\n y1:{:?},\n x2:{:?},\n y2:{:?},\n color:Color::RGBA{:?},\n texture:Some(textures::{}),\n u:{:?},\n v:{:?}}},\n\n",
             x1,
             y1,
             x2,
             y2,
-            player.level.walls[w as usize].color.rgba()
+            player.level.walls[w as usize].color.rgba(),
+            player.level.walls[w as usize].texture.unwrap().name,
+            player.level.walls[w as usize].u,
+            player.level.walls[w as usize].v,
         );
         file.write_all(wall.as_bytes())
             .expect("Unable to write your data loser!")
@@ -280,23 +360,23 @@ impl renderer::Renderer {
 
     pub fn draw_player(
         &mut self,
-        x: f32,
-        y: f32,
+        x: i32,
+        y: i32,
         color: Color,
         grid: &mut Grid,
         player: &mut PlayerInfo,
     ) -> Result<(), String> {
         self.canvas.set_draw_color(color);
         self.canvas.fill_rect(Rect::new(
-            (x * PIXEL_SCALE as f32) as i32,
-            (y * PIXEL_SCALE as f32) as i32,
+            x * PIXEL_SCALE as i32,
+            y * PIXEL_SCALE as i32,
             grid.scale as u32 * 2 * PIXEL_SCALE as u32,
             grid.scale as u32 * 2 * PIXEL_SCALE as u32,
         ))?;
 
         for t in player.angle_h as i32 - 22..player.angle_h as i32 + 22 {
-            let x1 = x + (70.0 * sine(t));
-            let y1 = y + (70.0 * cosine(t));
+            let x1 = x as f32 + (70.0 * sine(t));
+            let y1 = y as f32 + (70.0 * cosine(t));
             self.draw_dot(x1, y1, color)?;
         }
         Ok(())
@@ -363,7 +443,6 @@ impl renderer::Renderer {
         grid.scale = no_less_than_one(grid.scale);
         let scale_width = SCREEN_WIDTH / 160 * grid.scale as usize;
         let scale_height = SCREEN_HEIGHT / 120 * grid.scale as usize;
-        let one_over = 100.0 * (grid.scale as f32);
 
         //draw grid
         for x in 0..SCREEN_WIDTH as usize {
@@ -384,6 +463,18 @@ impl renderer::Renderer {
             for wall in player.level.sectors[s as usize].wall_start
                 ..player.level.sectors[s as usize].wall_end
             {
+                self.draw_thick_line(
+                    (player.level.walls[wall as usize].x1 + grid.view_shift_x as f32)
+                        * grid.scale as f32,
+                    (player.level.walls[wall as usize].y1 + grid.view_shift_y as f32)
+                        * grid.scale as f32,
+                    (player.level.walls[wall as usize].x2 + grid.view_shift_x as f32)
+                        * grid.scale as f32,
+                    (player.level.walls[wall as usize].y2 + grid.view_shift_y as f32)
+                        * grid.scale as f32,
+                    player.level.walls[wall as usize].color,
+                )?; // Draw walls
+
                 // circle selected points from the drawn highlight
                 if grid.selected_point.is_none() {
                     for point in grid.selection.points.clone() {
@@ -433,21 +524,20 @@ impl renderer::Renderer {
 
                 if grid.selected_wall.is_some() {
                     if wall == grid.selected_wall.unwrap() as i32 {
-                        grid.selected_sector = Some(s)
+                        grid.selected_sector = Some(s);
+                        self.draw_thick_line(
+                            (player.level.walls[wall as usize].x1 + grid.view_shift_x as f32)
+                                * grid.scale as f32,
+                            (player.level.walls[wall as usize].y1 + grid.view_shift_y as f32)
+                                * grid.scale as f32,
+                            (player.level.walls[wall as usize].x2 + grid.view_shift_x as f32)
+                                * grid.scale as f32,
+                            (player.level.walls[wall as usize].y2 + grid.view_shift_y as f32)
+                                * grid.scale as f32,
+                            colors::WHITE,
+                        )?; // Draw walls
                     }
                 } // sets the selected sector according to the selected wall
-
-                self.draw_thick_line(
-                    (player.level.walls[wall as usize].x1 + grid.view_shift_x as f32)
-                        * grid.scale as f32,
-                    (player.level.walls[wall as usize].y1 + grid.view_shift_y as f32)
-                        * grid.scale as f32,
-                    (player.level.walls[wall as usize].x2 + grid.view_shift_x as f32)
-                        * grid.scale as f32,
-                    (player.level.walls[wall as usize].y2 + grid.view_shift_y as f32)
-                        * grid.scale as f32,
-                    player.level.walls[wall as usize].color,
-                )?; // Draw walls
 
                 if distance(
                     grid.mouse_status.mouse_x as f32,
@@ -474,8 +564,8 @@ impl renderer::Renderer {
         }
 
         self.draw_player(
-            (player.position.x + grid.view_shift_x as f32) * grid.scale as f32,
-            (player.position.y + grid.view_shift_y as f32) * grid.scale as f32,
+            (player.position.x + grid.view_shift_x) * grid.scale as i32,
+            (player.position.y + grid.view_shift_y) * grid.scale as i32,
             colors::GREEN,
             grid,
             player,
@@ -499,6 +589,15 @@ impl renderer::Renderer {
 
         if grid.selected_sector.is_some() {
             let sector_text = format!("Sector:{:#?}", grid.selected_sector.unwrap()).to_string();
+            let wall_text = format!("Wall:{:#?}", grid.selected_wall.unwrap()).to_string();
+            let wall_u_text = format!(
+                "texture u:{}",
+                player.level.walls[grid.selected_wall.unwrap()].u
+            );
+            let wall_v_text = format!(
+                "texture v:{}",
+                player.level.walls[grid.selected_wall.unwrap()].v
+            );
             let floor_height_text = format!(
                 "floor_z:{:#?}",
                 player.level.sectors[grid.selected_sector.unwrap() as usize].bottom_height
@@ -509,6 +608,114 @@ impl renderer::Renderer {
                 player.level.sectors[grid.selected_sector.unwrap() as usize].top_height
             )
             .to_string();
+
+            let texture_preview_rect = Rect::new(445, 735, 90, 90);
+            self.canvas.set_draw_color(colors::RED);
+            self.canvas.fill_rect(texture_preview_rect)?;
+            let texture = get_texture(
+                &texture_creator,
+                player.level.walls[grid.selected_wall.unwrap() as usize]
+                    .texture
+                    .unwrap()
+                    .width,
+                player.level.walls[grid.selected_wall.unwrap() as usize]
+                    .texture
+                    .unwrap()
+                    .height,
+                player.level.walls[grid.selected_wall.unwrap() as usize]
+                    .texture
+                    .unwrap()
+                    .data,
+            )?;
+            self.canvas.copy(&texture, None, texture_preview_rect)?;
+            self.canvas.set_draw_color(colors::BLACK);
+            for i in 0..3 {
+                self.canvas.draw_rect(Rect::new(
+                    444 - i,
+                    734 - i,
+                    (91 + i * 2) as u32,
+                    (91 + i * 2) as u32,
+                ))?;
+            }
+
+            Self::text(
+                self,
+                &texture_creator,
+                &font,
+                wall_text,
+                colors::BLACK,
+                240,
+                740,
+                110,
+                25,
+            )?; // wall number text
+            Self::text(
+                self,
+                &texture_creator,
+                &font,
+                wall_u_text,
+                colors::BLACK,
+                240,
+                770,
+                120,
+                20,
+            )?; // wall u text
+            Self::text(
+                self,
+                &texture_creator,
+                &font,
+                "+".to_string(),
+                colors::BLACK,
+                370,
+                770,
+                25,
+                25,
+            )?; // wall u plus
+            Self::text(
+                self,
+                &texture_creator,
+                &font,
+                "-".to_string(),
+                colors::BLACK,
+                400,
+                760,
+                25,
+                40,
+            )?; // wall u minus
+            Self::text(
+                self,
+                &texture_creator,
+                &font,
+                wall_v_text,
+                colors::BLACK,
+                240,
+                800,
+                120,
+                20,
+            )?; // wall v text
+            Self::text(
+                self,
+                &texture_creator,
+                &font,
+                "+".to_string(),
+                colors::BLACK,
+                370,
+                800,
+                25,
+                25,
+            )?; // wall v plus
+            Self::text(
+                self,
+                &texture_creator,
+                &font,
+                "-".to_string(),
+                colors::BLACK,
+                400,
+                795,
+                25,
+                40,
+            )?; // wall u minus
+
             Self::text(
                 self,
                 &texture_creator,
@@ -530,8 +737,30 @@ impl renderer::Renderer {
                 25,
                 770,
                 120,
-                15,
+                20,
             )?; // sector floor text
+            Self::text(
+                self,
+                &texture_creator,
+                &font,
+                "+".to_string(),
+                colors::BLACK,
+                160,
+                770,
+                25,
+                25,
+            )?; // sector floor plus
+            Self::text(
+                self,
+                &texture_creator,
+                &font,
+                "-".to_string(),
+                colors::BLACK,
+                190,
+                765,
+                25,
+                40,
+            )?; // sector floor minus
             Self::text(
                 self,
                 &texture_creator,
@@ -541,21 +770,30 @@ impl renderer::Renderer {
                 25,
                 790,
                 120,
-                15,
+                20,
             )?; // sector ceiling text
-        } else {
-            let sector_text = format!("Sector:").to_string();
             Self::text(
                 self,
                 &texture_creator,
                 &font,
-                sector_text,
+                "+".to_string(),
                 colors::BLACK,
+                160,
+                790,
                 25,
-                740,
-                120,
                 25,
-            )?; // sector number text
+            )?; // sector cieling plus
+            Self::text(
+                self,
+                &texture_creator,
+                &font,
+                "-".to_string(),
+                colors::BLACK,
+                190,
+                785,
+                25,
+                40,
+            )?; // sector ceiling minus
         }
 
         Self::text(
@@ -593,3 +831,30 @@ impl renderer::Renderer {
         Ok(())
     }
 }
+
+pub fn get_texture<'a>(
+    texture_creator: &'a TextureCreator<WindowContext>,
+    texture_width: u32,
+    texture_height: u32,
+    texture_data: &[u32],
+) -> Result<sdl2::render::Texture<'a>, String> {
+    let mut texture = texture_creator
+        .create_texture_streaming(
+            Some(PixelFormatEnum::RGBA8888),
+            texture_width,
+            texture_height,
+        )
+        .map_err(|e| e.to_string())?;
+
+    texture.with_lock(None, |buffer: &mut [u8], _pitch: usize| {
+        for index in 0..4096 {
+            let bytes = texture_data[index].to_be_bytes();
+            buffer[index * 4] = bytes[0];
+            buffer[index * 4 + 1] = bytes[1];
+            buffer[index * 4 + 2] = bytes[2];
+            buffer[index * 4 + 3] = bytes[3];
+        }
+    })?;
+
+    Ok(texture)
+} // Creates a texture from a given array of u32s

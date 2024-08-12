@@ -20,11 +20,11 @@ pub use std::{
     vec::Vec,
 };
 pub mod colors;
-#[allow(non_snake_case)]
-pub mod generated_textures;
 pub mod grid;
 pub mod level;
 pub mod renderer;
+#[allow(non_snake_case)]
+pub mod textures;
 
 //Constants:
 pub const RESOLUTION: usize = 7;
@@ -34,23 +34,11 @@ pub const SCREEN_HEIGHT: usize = RESOLUTION * 120;
 pub const HALF_HEIGHT: usize = SCREEN_HEIGHT / 2;
 pub const PIXEL_SCALE: usize = 1;
 
-pub const BRAT_TEXTURE: Texture = Texture {
-    width: generated_textures::BRAT::BRAT_WIDTH,
-    height: generated_textures::BRAT::BRAT_HEIGHT,
-    data: &generated_textures::BRAT::BRAT_ARRAY,
-};
-
-pub const ORANGE_TILE_TEXTURE: Texture = Texture {
-    width: generated_textures::ORANGE_TILE::ORANGE_TILE_WIDTH,
-    height: generated_textures::ORANGE_TILE::ORANGE_TILE_HEIGHT,
-    data: &generated_textures::ORANGE_TILE::ORANGE_TILE_ARRAY,
-};
-
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct XYZ {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+    pub x: i32,
+    pub y: i32,
+    pub z: i32,
 }
 
 #[derive(Clone, Default, Debug)]
@@ -72,9 +60,9 @@ impl PlayerInfo {
         };
         PlayerInfo {
             position: XYZ {
-                x: 32.0,
-                y: 32.0,
-                z: 10.0,
+                x: 32,
+                y: 32,
+                z: 10,
             },
             angle_h: 0,
             level: init_level,
@@ -86,10 +74,10 @@ impl PlayerInfo {
             for (i, wall) in player.level.walls.iter().enumerate() {
                 if sector.wall_start as usize <= i && i < sector.wall_end as usize {
                     //oftset bottom 2 points by player:
-                    let x1 = wall.x1 - player.position.x;
-                    let y1 = wall.y1 - player.position.y;
-                    let x2 = wall.x2 - player.position.x;
-                    let y2 = wall.y2 - player.position.y;
+                    let x1 = wall.x1 as i32 - player.position.x;
+                    let y1 = wall.y1 as i32 - player.position.y;
+                    let x2 = wall.x2 as i32 - player.position.x;
+                    let y2 = wall.y2 as i32 - player.position.y;
 
                     let world_x1 =
                         x1 as f32 * cosine(player.angle_h) - y1 as f32 * sine(player.angle_h);
@@ -118,10 +106,10 @@ impl PlayerInfo {
 
     // player movement funtcions:
     pub fn move_up(player: &mut PlayerInfo) {
-        player.position.z -= PIXEL_SCALE as f32;
+        player.position.z -= PIXEL_SCALE as i32;
     }
     pub fn move_down(player: &mut PlayerInfo) {
-        player.position.z += PIXEL_SCALE as f32;
+        player.position.z += PIXEL_SCALE as i32;
     }
     pub fn look_left(player: &mut PlayerInfo) {
         player.angle_h -= 10;
@@ -130,26 +118,26 @@ impl PlayerInfo {
         player.angle_h += 10;
     }
     pub fn move_fowward(player: &mut PlayerInfo) {
-        let dx = sine(player.angle_h) * 10.01;
-        let dy = cosine(player.angle_h) * 10.00;
+        let dx = (sine(player.angle_h) * 10.0) as i32;
+        let dy = (cosine(player.angle_h) * 10.0) as i32;
         player.position.x += dx;
         player.position.y += dy;
     }
     pub fn move_right(player: &mut PlayerInfo) {
-        let dx = sine(player.angle_h) * 10.01;
-        let dy = cosine(player.angle_h) * 10.00;
+        let dx = (sine(player.angle_h) * 10.0) as i32;
+        let dy = (cosine(player.angle_h) * 10.0) as i32;
         player.position.x += dy;
         player.position.y -= dx;
     }
     pub fn move_left(player: &mut PlayerInfo) {
-        let dx = sine(player.angle_h) * 10.00;
-        let dy = cosine(player.angle_h) * 10.00;
+        let dx = (sine(player.angle_h) * 10.0) as i32;
+        let dy = (cosine(player.angle_h) * 10.0) as i32;
         player.position.x -= dy;
         player.position.y += dx;
     }
     pub fn move_backward(player: &mut PlayerInfo) {
-        let dx = sine(player.angle_h) * 10.00;
-        let dy = cosine(player.angle_h) * 10.00;
+        let dx = (sine(player.angle_h) * 10.0) as i32;
+        let dy = (cosine(player.angle_h) * 10.0) as i32;
         player.position.x -= dx;
         player.position.y -= dy;
     }
@@ -191,6 +179,42 @@ impl Wall {
         }
         points
     } // returns either the first or second point of a given wall
+    pub fn next_texture(&mut self) {
+        for (i, texture) in textures::TEXTURES.iter().enumerate() {
+            match self.texture {
+                Some(self_texture) => {
+                    if texture == &self_texture {
+                        if i == textures::TEXTURES.len() - 1 {
+                            self.texture = Some(textures::TEXTURES[0]);
+                            return;
+                        } else {
+                            self.texture = Some(textures::TEXTURES[i + 1]);
+                            return;
+                        }
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
+    pub fn prev_texture(&mut self) {
+        for (i, texture) in textures::TEXTURES.iter().enumerate() {
+            match self.texture {
+                Some(self_texture) => {
+                    if texture == &self_texture {
+                        if i == 0 {
+                            self.texture = Some(textures::TEXTURES[textures::TEXTURES.len() - 1]);
+                            return;
+                        } else {
+                            self.texture = Some(textures::TEXTURES[i - 1]);
+                            return;
+                        }
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -285,49 +309,6 @@ pub fn wall_point(
     }
 } // returns the first or second point of a given wall
 
-pub const NEW_SECTOR_WALLS: [Wall; 4] = [
-    Wall {
-        x1: 32.0,
-        y1: 32.0,
-        x2: 32.0,
-        y2: 64.0,
-        color: colors::CYAN,
-        texture: None,
-        u: 1.0,
-        v: 1.0,
-    },
-    Wall {
-        x1: 64.0,
-        y1: 32.0,
-        x2: 32.0,
-        y2: 32.0,
-        color: colors::DARK_CYAN,
-        texture: None,
-        u: 1.0,
-        v: 1.0,
-    },
-    Wall {
-        x1: 64.0,
-        y1: 64.0,
-        x2: 64.0,
-        y2: 32.0,
-        color: colors::DARK_CYAN,
-        texture: None,
-        u: 1.0,
-        v: 1.0,
-    },
-    Wall {
-        x1: 32.0,
-        y1: 64.0,
-        x2: 64.0,
-        y2: 64.0,
-        color: colors::CYAN,
-        texture: None,
-        u: 1.0,
-        v: 1.0,
-    },
-];
-
 pub fn is_even(x: i32) -> bool {
     if (x as f32 / 2.0).fract() == 0.0 {
         true
@@ -336,8 +317,9 @@ pub fn is_even(x: i32) -> bool {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Texture {
+    name: &'static str,
     width: u32,
     height: u32,
     data: &'static [u32],
