@@ -16,7 +16,7 @@
 ███████████████████████████████████████████████████████████████████████████████████      ██  █  █  █ ████████████                       ███ ███████████\
 ████████████████████████████████████████████████████████████████████                       ███ █████████████████        █   █             █████████████\
 ███████████████████████████████████████████████████████████████                               █         ██████████         █ ███       ████████████████\
-█████████████████████████████████████████        ███                  ████                                     ██        ███ ██████████████████████████\ 
+█████████████████████████████████████████        ███                  ████                                     ██        ███ ██████████████████████████\
 ███████████████████████               ██████████         ████████████████████                                 ███         ████████████████████████ █   \
 ██████████████████     █████████████████████████████████████████████  █ ███████                             ████          █████████████████████     ██ \
 ███████████████████████   ██    █████████████████████████████████████████████     ██                    ████████  █        ███████               ███   \
@@ -44,7 +44,8 @@ This is my attempt at rewriting a doom style game engine in rust with as few dep
 im pretty new to the language so I am sure there will be lots to improve on\
 \
 main.rs\
-    - entry point into the program, contains initialization of all of the neccesary sdl contexts\
+    - entry point into the program
+    - contains initialization of all of the neccesary sdl contexts\
     - contains the global event loop that captures player input and calls the renderer each frame\
     - the bottom of the main file contains the awfully written control flow to capture mouse input for the level editor\
 \

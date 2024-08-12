@@ -6,7 +6,7 @@ pub struct Grid {
     pub wall_color: Color,              // the color of the wall that is curently being drawn
     pub bottom_height: i32, // the bottom height of the sector that is currently being drawn
     pub top_height: i32,    // the top height of the sector that is currently being drawn
-    pub scale: u32,         // how large the squares of the grid appear on the screen
+    pub scale: i32,         // how large the squares of the grid appear on the screen
     pub selected_sector: Option<usize>, // the sector that is currently being moved
     pub selected_wall: Option<usize>, // the wall that is currently being moved
     pub selected_point: Option<usize>, // the point that is currently being moved
@@ -63,7 +63,7 @@ impl Grid {
 
     pub fn deselect(&mut self) {
         self.selected_wall = None;
-        self.selected_sector = None;
+        //self.selected_sector = None;
         self.selected_point = None;
     } // deselects all points, walls, & sectors; called every frame that the left mouse button is not pressed
 
@@ -146,21 +146,21 @@ impl MouseStatus {
     pub fn get(mouse_state: MouseState, click_toggle: bool, click_count: usize) -> MouseStatus {
         let mouse_x = mouse_state.x();
         let mouse_y = mouse_state.y();
-        let mut _button = None;
-        if mouse_state.left() {
-            _button = Some(Button::Left)
-        } else if mouse_state.right() {
-            _button = Some(Button::Left)
-        } else {
-            _button = None
-        }
+        let button = match mouse_state.left() {
+            true => Some(Button::Left),
+            false => match mouse_state.right() {
+                true => Some(Button::Right),
+                false => None,
+            },
+        };
+
         if click_toggle == true {
             MouseStatus {
                 mouse_x,
                 mouse_y,
                 click_toggle: true,
                 click_count,
-                button: _button,
+                button,
                 relative_x: None,
                 relative_y: None,
             }
@@ -170,7 +170,7 @@ impl MouseStatus {
                 mouse_y,
                 click_toggle: false,
                 click_count,
-                button: _button,
+                button,
                 relative_x: None,
                 relative_y: None,
             }
@@ -290,8 +290,8 @@ impl renderer::Renderer {
         self.canvas.fill_rect(Rect::new(
             (x * PIXEL_SCALE as f32) as i32,
             (y * PIXEL_SCALE as f32) as i32,
-            grid.scale * 2 * PIXEL_SCALE as u32,
-            grid.scale * 2 * PIXEL_SCALE as u32,
+            grid.scale as u32 * 2 * PIXEL_SCALE as u32,
+            grid.scale as u32 * 2 * PIXEL_SCALE as u32,
         ))?;
 
         for t in player.angle_h as i32 - 22..player.angle_h as i32 + 22 {
@@ -360,18 +360,19 @@ impl renderer::Renderer {
         font: &sdl2::ttf::Font,
     ) -> Result<(), String> {
         self.draw_mode = renderer::DrawMode::Draw2D;
-        grid.scale = no_less_than_four(grid.scale);
+        grid.scale = no_less_than_one(grid.scale);
         let scale_width = SCREEN_WIDTH / 160 * grid.scale as usize;
         let scale_height = SCREEN_HEIGHT / 120 * grid.scale as usize;
+        let one_over = 100.0 * (grid.scale as f32);
 
         //draw grid
-        for x in 0..100 * grid.scale as usize {
+        for x in 0..SCREEN_WIDTH as usize {
             let grid_x = x * scale_width;
             for y in 0..1 * SCREEN_HEIGHT {
                 self.draw_dot(grid_x as f32, y as f32, colors::BLACK)?;
             }
         }
-        for y in 0..100 * grid.scale as usize {
+        for y in 0..SCREEN_HEIGHT as usize {
             let grid_y = y * scale_height;
             for x in 0..1 * SCREEN_WIDTH {
                 self.draw_dot(x as f32, grid_y as f32, colors::BLACK)?;

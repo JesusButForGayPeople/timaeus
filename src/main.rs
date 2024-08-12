@@ -7,7 +7,6 @@ use timaeus::renderer::{DrawMode::*, Renderer};
 
 fn main() -> Result<(), String> {
     //initialization:
-
     let sdl_context = sdl2::init()?;
     let frame_duration = Duration::new(0, 1_000_000_000u32 / 30);
     let mut frame_count = 0;
@@ -19,9 +18,12 @@ fn main() -> Result<(), String> {
     let mut player = PlayerInfo::new();
     let mut grid = Grid::new();
     grid.selection = Selection::from_level(&player.level);
+    let mut debug2: Option<Debug> = None;
+    let mut player_clone = player.clone();
+    let mut grid_clone = grid.clone();
 
     let window = video_subsystem
-        .window("Rume W.I.P.", SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32)
+        .window("Timaeus W.I.P.", SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32)
         .position_centered()
         .opengl()
         .build()
@@ -29,7 +31,6 @@ fn main() -> Result<(), String> {
     let mut renderer = Renderer::new(window)?;
 
     'running: loop {
-        println!("draw mode: {:?}", renderer.draw_mode);
         let state = event_pump.mouse_state(); // offset mouse position so that it reflects its position within the actual grid
         let relative_state = event_pump.relative_mouse_state();
         let screen_x = ((state.x()) as f32 / (grid.scale as f32)) - grid.view_shift_x as f32;
@@ -51,7 +52,7 @@ fn main() -> Result<(), String> {
                         grid.mouse_status.relative_x = Some(relative_state.x());
                         grid.mouse_status.relative_y = Some(relative_state.y());
                         if grid.selected_point.is_none() && grid.state == State::Free {
-                            grid.selection.sectors = Vec::new();
+                            //grid.selection.sectors = Vec::new();
                             grid.selection.walls = Vec::new();
                             grid.selection.points = Vec::new();
                             grid.highlight_x = Some(x);
@@ -150,6 +151,7 @@ fn main() -> Result<(), String> {
                 if wall_number + 1 < player.level.sectors[sector as usize].wall_end {
                     let wall = wall_number as usize; // this massive set of control flow statements is what dictates which points are moved when a vertex is clicked on
                     let next = (wall + 1) as usize; // since the selected wall does not repeat automatically if the last wall of a sector was selected
+
                     if distance(
                         grid.mouse_status.mouse_x as f32, // a shorter statement would allow you to drag the point from the next sector along with the intended point
                         grid.mouse_status.mouse_y as f32, // thus, since each wall has two points there is eight cases to cover all possible combinations of points
@@ -199,6 +201,7 @@ fn main() -> Result<(), String> {
 
                             grid.selected_sector = Some(sector as usize);
                             grid.selected_wall = Some(wall_number as usize);
+
                             grid.selected_point = Some(2);
                         }
                     }
@@ -366,96 +369,80 @@ fn main() -> Result<(), String> {
             }
         }
 
-        if grid.selected_point.is_some() {
-            grid.highlight_x = None;
-            grid.highlight_y = None;
-            if grid.selected_point == Some(1) {
-                if grid.selected_wall == None {
-                } else {
-                    grid.state = State::Busy;
-                    player.level.walls[grid.selected_wall.unwrap()].y1 = screen_y;
-                    player.level.walls[grid.selected_wall.unwrap()].x1 = screen_x;
-                    player.level.walls[grid.selected_wall.unwrap() + 1].y2 = screen_y;
-                    player.level.walls[grid.selected_wall.unwrap() + 1].x2 = screen_x;
+        match grid.selected_point {
+            Some(point) => {
+                grid.highlight_x = None;
+                grid.highlight_y = None;
+                grid.state = State::Busy;
+                match grid.selected_wall {
+                    Some(wall) => {
+                        let second_wall = (player.level.sectors[grid.selected_sector.unwrap()]
+                            .wall_start) as usize;
+                        match point {
+                            1 => {
+                                player.level.walls[wall].y1 = screen_y;
+                                player.level.walls[wall].x1 = screen_x;
+                                player.level.walls[wall + 1].y2 = screen_y;
+                                player.level.walls[wall + 1].x2 = screen_x;
+                            }
+                            2 => {
+                                player.level.walls[wall].y1 = screen_y;
+                                player.level.walls[wall].x1 = screen_x;
+                                player.level.walls[wall + 1].y1 = screen_y;
+                                player.level.walls[wall + 1].x1 = screen_x;
+                            }
+                            3 => {
+                                player.level.walls[wall].x2 = screen_x;
+                                player.level.walls[wall].y2 = screen_y;
+                                player.level.walls[wall + 1].x1 = screen_x;
+                                player.level.walls[wall + 1].y1 = screen_y;
+                            }
+                            4 => {
+                                player.level.walls[wall].x2 = screen_x;
+                                player.level.walls[wall].y2 = screen_y;
+                                player.level.walls[wall + 1].x2 = screen_x;
+                                player.level.walls[wall + 1].y2 = screen_y;
+                            }
+                            5 => {
+                                player.level.walls[wall].y1 = screen_y;
+                                player.level.walls[wall].x1 = screen_x;
+                                player.level.walls[second_wall].y2 = screen_y;
+                                player.level.walls[second_wall].x2 = screen_x;
+                            }
+                            6 => {
+                                player.level.walls[wall].y1 = screen_y;
+                                player.level.walls[wall].x1 = screen_x;
+                                player.level.walls[second_wall].y1 = screen_y;
+                                player.level.walls[second_wall].x1 = screen_x;
+                            }
+                            7 => {
+                                player.level.walls[wall].x2 = screen_x;
+                                player.level.walls[wall].y2 = screen_y;
+                                player.level.walls[second_wall].x1 = screen_x;
+                                player.level.walls[second_wall].y1 = screen_y;
+                            }
+                            8 => {
+                                player.level.walls[wall].x2 = screen_x;
+                                player.level.walls[wall].y2 = screen_y;
+                                player.level.walls[second_wall].x2 = screen_x;
+                                player.level.walls[second_wall].y2 = screen_y;
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
                 }
             }
-            if grid.selected_point == Some(2) {
-                if grid.selected_wall == None {
-                } else {
-                    grid.state = State::Busy;
-                    player.level.walls[grid.selected_wall.unwrap()].y1 = screen_y;
-                    player.level.walls[grid.selected_wall.unwrap()].x1 = screen_x;
-                    player.level.walls[grid.selected_wall.unwrap() + 1].y1 = screen_y;
-                    player.level.walls[grid.selected_wall.unwrap() + 1].x1 = screen_x;
-                }
-            }
-            if grid.selected_point == Some(3) {
-                if grid.selected_wall == None {
-                } else {
-                    grid.state = State::Busy;
-                    player.level.walls[grid.selected_wall.unwrap()].x2 = screen_x;
-                    player.level.walls[grid.selected_wall.unwrap()].y2 = screen_y;
-                    player.level.walls[grid.selected_wall.unwrap() + 1].x1 = screen_x;
-                    player.level.walls[grid.selected_wall.unwrap() + 1].y1 = screen_y;
-                }
-            }
-            if grid.selected_point == Some(4) {
-                if grid.selected_wall == None {
-                } else {
-                    grid.state = State::Busy;
-                    player.level.walls[grid.selected_wall.unwrap()].x2 = screen_x;
-                    player.level.walls[grid.selected_wall.unwrap()].y2 = screen_y;
-                    player.level.walls[grid.selected_wall.unwrap() + 1].x2 = screen_x;
-                    player.level.walls[grid.selected_wall.unwrap() + 1].y2 = screen_y;
-                }
-            }
-
-            let second_wall =
-                (player.level.sectors[grid.selected_sector.unwrap()].wall_start) as usize;
-            if grid.selected_point == Some(5) {
-                if grid.selected_wall == None {
-                } else {
-                    grid.state = State::Busy;
-                    player.level.walls[grid.selected_wall.unwrap()].y1 = screen_y;
-                    player.level.walls[grid.selected_wall.unwrap()].x1 = screen_x;
-                    player.level.walls[second_wall].y2 = screen_y;
-                    player.level.walls[second_wall].x2 = screen_x;
-                }
-            }
-            if grid.selected_point == Some(6) {
-                if grid.selected_wall == None {
-                } else {
-                    grid.state = State::Busy;
-                    player.level.walls[grid.selected_wall.unwrap()].y1 = screen_y;
-                    player.level.walls[grid.selected_wall.unwrap()].x1 = screen_x;
-                    player.level.walls[second_wall].y1 = screen_y;
-                    player.level.walls[second_wall].x1 = screen_x;
-                }
-            }
-            if grid.selected_point == Some(7) {
-                if grid.selected_wall == None {
-                } else {
-                    grid.state = State::Busy;
-                    player.level.walls[grid.selected_wall.unwrap()].x2 = screen_x;
-                    player.level.walls[grid.selected_wall.unwrap()].y2 = screen_y;
-                    player.level.walls[second_wall].x1 = screen_x;
-                    player.level.walls[second_wall].y1 = screen_y;
-                }
-            }
-            if grid.selected_point == Some(8) {
-                if grid.selected_wall == None {
-                } else {
-                    grid.state = State::Busy;
-                    player.level.walls[grid.selected_wall.unwrap()].x2 = screen_x;
-                    player.level.walls[grid.selected_wall.unwrap()].y2 = screen_y;
-                    player.level.walls[second_wall].x2 = screen_x;
-                    player.level.walls[second_wall].y2 = screen_y;
-                }
-            }
+            _ => {}
         }
+
         frame_count += 1;
-        if frame_count == 10 {
-            frame_count -= 10;
+        player_clone = player.clone();
+        grid_clone = grid.clone();
+        if debug2.is_some() {
+            debug2 = Some(debug(player_clone, grid_clone, Some(debug2.unwrap())));
+        } else {
+            debug2 = Some(debug(player_clone, grid_clone, None));
         }
 
         Renderer::draw(&mut renderer, &mut player, &mut grid, &font)?;
@@ -463,4 +450,33 @@ fn main() -> Result<(), String> {
 
     std::thread::sleep(frame_duration);
     Ok(())
+}
+
+pub struct Debug {
+    player: PlayerInfo,
+    grid: grid::Grid,
+}
+
+pub fn debug(player: PlayerInfo, grid: grid::Grid, prev_frame: Option<Debug>) -> Debug {
+    match prev_frame {
+        Some(prev_frame) => {
+            if prev_frame.player.position != player.position {
+                println!(
+                    "Player position: {:#?},\n Player angle_h: {:#?}",
+                    player.position, player.angle_h
+                );
+            }
+            if prev_frame.player.angle_h != player.angle_h {
+                println!(
+                    "Player position: {:#?},\n Player angle_h: {:#?}",
+                    player.position, player.angle_h
+                );
+            }
+            if prev_frame.grid != grid {
+                println!("Grid x: {:#?}", grid);
+            }
+        }
+        _ => (),
+    }
+    Debug { player, grid }
 }

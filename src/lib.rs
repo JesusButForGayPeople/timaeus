@@ -8,6 +8,7 @@ pub use sdl2::{
     render::{BlendMode, Canvas, TextureCreator},
     ttf::Sdl2TtfContext,
     video::{Window, WindowContext},
+    EventPump,
 };
 pub use std::{
     collections::HashSet,
@@ -45,7 +46,7 @@ pub const ORANGE_TILE_TEXTURE: Texture = Texture {
     data: &generated_textures::ORANGE_TILE::ORANGE_TILE_ARRAY,
 };
 
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct XYZ {
     pub x: f32,
     pub y: f32,
@@ -170,8 +171,8 @@ pub struct Wall {
     pub y2: f32, // last y
     pub color: Color,
     pub texture: Option<Texture>,
-    pub u: i32,
-    pub v: i32,
+    pub u: f32,
+    pub v: f32,
 }
 
 impl Wall {
@@ -229,9 +230,9 @@ pub fn one_if_none(n: f32) -> f32 {
     }
 } // returns one if the given value is zero
 
-pub fn no_less_than_four(n: u32) -> u32 {
-    if n <= 4 {
-        return 4;
+pub fn no_less_than_one(n: i32) -> i32 {
+    if n <= 1 {
+        return 1;
     } else {
         return n;
     }
@@ -292,8 +293,8 @@ pub const NEW_SECTOR_WALLS: [Wall; 4] = [
         y2: 64.0,
         color: colors::CYAN,
         texture: None,
-        u: 0,
-        v: 0,
+        u: 1.0,
+        v: 1.0,
     },
     Wall {
         x1: 64.0,
@@ -302,8 +303,8 @@ pub const NEW_SECTOR_WALLS: [Wall; 4] = [
         y2: 32.0,
         color: colors::DARK_CYAN,
         texture: None,
-        u: 0,
-        v: 0,
+        u: 1.0,
+        v: 1.0,
     },
     Wall {
         x1: 64.0,
@@ -312,8 +313,8 @@ pub const NEW_SECTOR_WALLS: [Wall; 4] = [
         y2: 32.0,
         color: colors::DARK_CYAN,
         texture: None,
-        u: 0,
-        v: 0,
+        u: 1.0,
+        v: 1.0,
     },
     Wall {
         x1: 32.0,
@@ -322,8 +323,8 @@ pub const NEW_SECTOR_WALLS: [Wall; 4] = [
         y2: 64.0,
         color: colors::CYAN,
         texture: None,
-        u: 0,
-        v: 0,
+        u: 1.0,
+        v: 1.0,
     },
 ];
 
