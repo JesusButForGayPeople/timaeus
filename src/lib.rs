@@ -151,7 +151,7 @@ pub struct Level {
     pub walls: Vec<Wall>, // horizontal pane used to build sectors
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Wall {
     pub x1: f32, // first x
     pub y1: f32, // first y

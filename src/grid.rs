@@ -16,7 +16,7 @@ pub struct Grid {
     pub highlight_y: Option<i32>, // the initial  y position of the currently drawn highlight box
     pub selection: Selection, // the points, walls, & vectors that are in a highlight area
     pub state: State,
-    pub new_sector: bool,
+    pub new_sector: Option<Vec<(i32, i32)>>,
 }
 
 impl Grid {
@@ -49,7 +49,7 @@ impl Grid {
                 points: Vec::new(),
             },
             state: State::Free,
-            new_sector: false,
+            new_sector: None,
         }
     }
 
@@ -111,6 +111,7 @@ impl Grid {
             8 => colors::ORANGE,
             _ => colors::BLACK,
         };
+
         let new_sector_walls: [Wall; 4] = [
             Wall {
                 x1: 32.0,
@@ -268,7 +269,7 @@ pub fn save(player: &mut PlayerInfo) -> () {
 
     for s in 0..player.level.number_of_sectors {
         let sector = format!(
-            "Sector{{\n wall_start:{:?},\n wall_end:{:?},\n bottom_height:{:?},\n top_height:{:?},\n distance:{:?},\n top_color:Color::RGBA{:?},\n bottom_color:Color::RGBA{:?},\n surface:{:?},\n surface_points:[0; crate::SCREEN_WIDTH],\n surface_texture:Some(textures::{})\n}},\n\n",
+            "Sector{{\n wall_start:{:?},\n wall_end:{:?},\n bottom_height:{:?},\n top_height:{:?},\n distance:{:?},\n top_color:Color::RGBA{:?},\n bottom_color:Color::RGBA{:?},\n surface:{:?},\n surface_points:[0; crate::SCREEN_WIDTH],\n surface_texture:{}\n}},\n\n",
             player.level.sectors[s as usize].wall_start,
             player.level.sectors[s as usize].wall_end,
             player.level.sectors[s as usize].bottom_height,
@@ -279,16 +280,22 @@ pub fn save(player: &mut PlayerInfo) -> () {
             player.level.sectors[s as usize].surface,
             //player.level.sectors[s as usize].surface_points,
             match player.level.sectors[s as usize].surface_texture {
-                Some(texture) => texture.name,
-                _ => "None"
+                Some(texture) => format!("Some(textures::{})", texture.name),
+                _ => "None".to_string(),
             },
 
         );
         file.write_all(sector.as_bytes())
             .expect("Unable to write your data loser!");
     }
-    file.write_all("];\n\n//WALLS:\n\n pub const INIT_WALLS:[Wall; NUM_WALLS] = [".as_bytes())
-        .expect("Unable to write your data loser!");
+    file.write_all(
+        format!(
+            "];\n\n//WALLS:\n\n pub const INIT_WALLS:[Wall; {:?}] = [",
+            player.level.number_of_walls
+        )
+        .as_bytes(),
+    )
+    .expect("Unable to write your data loser!");
 
     for w in 0..player.level.number_of_walls {
         let x1 = player.level.walls[w as usize].x1;
@@ -404,6 +411,195 @@ impl renderer::Renderer {
         render.canvas.copy(&texture, None, text_box)?;
         Ok(())
     } // creates all the neccessary components to render text
+
+    pub fn draw_new_sector(
+        &mut self,
+        grid: &mut Grid,
+        player: &mut PlayerInfo,
+    ) -> Result<(), String> {
+        let random_color_number = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .subsec_nanos()
+            % 9;
+        let new_color = match random_color_number {
+            0 => colors::RED,
+            1 => colors::GREEN,
+            2 => colors::BLUE,
+            3 => colors::YELLOW,
+            4 => colors::CYAN,
+            5 => colors::PURPLE,
+            6 => colors::BROWN,
+            7 => colors::PINK,
+            8 => colors::ORANGE,
+            _ => colors::BLACK,
+        };
+        match &mut grid.new_sector {
+            Some(points) => match grid.mouse_status.click_count {
+                0 => {
+                    self.draw_dot(
+                        grid.mouse_status.mouse_x as f32,
+                        grid.mouse_status.mouse_y as f32,
+                        colors::WHITE,
+                    )?;
+                    if grid.mouse_status.button == Some(Button::Left) {
+                        points.push((
+                            grid.mouse_status.mouse_x as i32,
+                            grid.mouse_status.mouse_y as i32,
+                        ));
+                        grid.mouse_status.click_count += 1;
+                    }
+                }
+                1 => {
+                    self.draw_thick_line(
+                        points[0].0 as f32,
+                        points[0].1 as f32,
+                        grid.mouse_status.mouse_x as f32,
+                        grid.mouse_status.mouse_y as f32,
+                        colors::WHITE,
+                    )?;
+                    if grid.mouse_status.button == Some(Button::Left) {
+                        points.push((
+                            grid.mouse_status.mouse_x as i32,
+                            grid.mouse_status.mouse_y as i32,
+                        ));
+                        grid.mouse_status.click_count += 1;
+                    }
+                }
+                2 => {
+                    self.draw_thick_line(
+                        points[0].0 as f32,
+                        points[0].1 as f32,
+                        points[1].0 as f32,
+                        points[1].1 as f32,
+                        colors::GREY3,
+                    )?;
+                    self.draw_thick_line(
+                        points[1].0 as f32,
+                        points[1].1 as f32,
+                        grid.mouse_status.mouse_x as f32,
+                        grid.mouse_status.mouse_y as f32,
+                        colors::WHITE,
+                    )?;
+                    if grid.mouse_status.button == Some(Button::Left) {
+                        points.push((
+                            grid.mouse_status.mouse_x as i32,
+                            grid.mouse_status.mouse_y as i32,
+                        ));
+                        grid.mouse_status.click_count += 1;
+                    }
+                }
+                _ => {
+                    for (i, (x, y)) in points.iter().enumerate() {
+                        if i == points.len() - 1 {
+                            self.draw_thick_line(
+                                *x as f32,
+                                *y as f32,
+                                grid.mouse_status.mouse_x as f32,
+                                grid.mouse_status.mouse_y as f32,
+                                colors::WHITE,
+                            )?;
+                        } else {
+                            self.draw_thick_line(
+                                *x as f32,
+                                *y as f32,
+                                points[i + 1].0 as f32,
+                                points[i + 1].1 as f32,
+                                colors::GREY3,
+                            )?;
+                        }
+                    }
+                    if grid.mouse_status.button == Some(Button::Left) {
+                        points.push((
+                            grid.mouse_status.mouse_x as i32,
+                            grid.mouse_status.mouse_y as i32,
+                        ));
+                        grid.mouse_status.click_count += 1;
+                    }
+                    let distance = distance(
+                        points.first().unwrap().0 as f32,
+                        points.first().unwrap().1 as f32,
+                        points.last().unwrap().0 as f32,
+                        points.last().unwrap().1 as f32,
+                    );
+
+                    if points.len() >= 3 && distance <= 8.0 {
+                        if grid.mouse_status.button == Some(Button::Left) {
+                            points.push((
+                                grid.mouse_status.mouse_x as i32,
+                                grid.mouse_status.mouse_y as i32,
+                            ));
+                            grid.mouse_status.click_count += 1;
+                        }
+
+                        player.level.sectors.push(Sector {
+                            wall_start: player.level.number_of_walls as i32,
+                            wall_end: (player.level.number_of_walls + points.len() as u32 - 2)
+                                as i32,
+                            bottom_height: 0,
+                            top_height: 40,
+                            top_color: colors::BLACK,
+                            bottom_color: colors::WHITE,
+                            distance: 0.0,
+                            surface: None,
+                            surface_points: [0; SCREEN_WIDTH],
+                            surface_texture: Some(textures::BRAT_TEXTURE),
+                        });
+                        player.level.number_of_sectors += 1;
+
+                        for (mut i, (x, y)) in points.iter().enumerate() {
+                            if i == points.len() - 1 {
+                                player.level.walls.push(Wall {
+                                    x1: (points[0].0 as f32 - grid.view_shift_x as f32)
+                                        / grid.scale as f32,
+                                    y1: (points[0].1 as f32 - grid.view_shift_y as f32)
+                                        / grid.scale as f32,
+                                    x2: (points[i - 1].0 as f32 - grid.view_shift_x as f32)
+                                        / grid.scale as f32,
+                                    y2: (points[i - 1].1 as f32 - grid.view_shift_y as f32)
+                                        / grid.scale as f32,
+
+                                    color: new_color,
+                                    u: 1.0,
+                                    v: 1.0,
+                                    texture: Some(textures::BRAT_TEXTURE),
+                                });
+                                player.level.number_of_walls += 1;
+                            } else {
+                                player.level.walls.push(Wall {
+                                    x1: (*x as f32 - grid.view_shift_x as f32) / grid.scale as f32,
+                                    y1: (*y as f32 - grid.view_shift_y as f32) / grid.scale as f32,
+                                    x2: (points[i + 1].0 as f32 - grid.view_shift_x as f32)
+                                        / grid.scale as f32,
+                                    y2: (points[i + 1].1 as f32 - grid.view_shift_y as f32)
+                                        / grid.scale as f32,
+
+                                    color: new_color,
+                                    u: 1.0,
+                                    v: 1.0,
+                                    texture: Some(textures::BRAT_TEXTURE),
+                                });
+                                player.level.number_of_walls += 1;
+                            }
+                        }
+                        grid.new_sector = None;
+                        grid.mouse_status.click_count = 0;
+                    }
+                }
+            },
+            _ => {
+                grid.mouse_status.click_count = 0;
+                grid.new_sector = Some(vec![]);
+
+                self.draw_dot(
+                    grid.mouse_status.mouse_x as f32,
+                    grid.mouse_status.mouse_y as f32,
+                    colors::WHITE,
+                )?;
+            }
+        }
+        Ok(())
+    }
 
     pub fn highlight_rectangle(
         &mut self,
@@ -570,6 +766,10 @@ impl renderer::Renderer {
             grid,
             player,
         )?; //draw player
+
+        if grid.new_sector.is_some() {
+            self.draw_new_sector(grid, player)?;
+        }
 
         let bar = (6 * SCREEN_HEIGHT) / 7;
         for y in bar..SCREEN_HEIGHT {

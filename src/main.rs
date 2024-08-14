@@ -8,7 +8,7 @@ use timaeus::renderer::{DrawMode::*, Renderer};
 fn main() -> Result<(), String> {
     //initialization:
     let sdl_context = sdl2::init()?;
-    let frame_duration = Duration::new(0, 1_000_000_000u32 / 30);
+    let frame_duration = Duration::new(0, 1_000_000_000u32 / 60);
     let mut _frame_count = 0;
     let video_subsystem = sdl_context.video()?;
     let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
@@ -194,7 +194,7 @@ fn main() -> Result<(), String> {
                         Draw2D => renderer.draw_mode = Draw3D,
                     },
                     Keycode::N => Grid::new_sector(&mut grid, &mut player),
-                    Keycode::Y => grid.new_sector = true,
+                    Keycode::Y => grid.new_sector = Some(Vec::new()),
                     Keycode::P => {
                         println!("{:?}", player.position)
                     }
@@ -514,11 +514,11 @@ fn main() -> Result<(), String> {
         _frame_count += 1;
         let player_clone = player.clone();
         let grid_clone = grid.clone();
-        if debug2.is_some() {
-            debug2 = Some(debug(player_clone, grid_clone, Some(debug2.unwrap())));
-        } else {
-            debug2 = Some(debug(player_clone, grid_clone, None));
-        }
+        // if debug2.is_some() {
+        //     debug2 = Some(debug(player_clone, grid_clone, Some(debug2.unwrap())));
+        // } else {
+        //     debug2 = Some(debug(player_clone, grid_clone, None));
+        // }
 
         Renderer::draw(&mut renderer, &mut player, &mut grid, &font)?;
     }
