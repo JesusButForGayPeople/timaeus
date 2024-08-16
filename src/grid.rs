@@ -25,7 +25,7 @@ impl Grid {
             mouse_status: MouseStatus {
                 mouse_x: 0,
                 mouse_y: 0,
-                click_toggle: false,
+
                 click_count: 0,
                 button: None,
                 relative_x: None,
@@ -54,11 +54,7 @@ impl Grid {
     }
 
     pub fn get_mouse_status(&mut self, mouse_state: MouseState) {
-        self.mouse_status = MouseStatus::get(
-            mouse_state,
-            self.mouse_status.click_toggle,
-            self.mouse_status.click_count,
-        )
+        self.mouse_status = MouseStatus::get(mouse_state, self.mouse_status.click_count)
     } // gets the mouse.state from the SDL event pump
 
     pub fn deselect(&mut self) {
@@ -208,7 +204,7 @@ pub enum Button {
 pub struct MouseStatus {
     pub mouse_x: i32,
     pub mouse_y: i32,
-    pub click_toggle: bool,
+
     pub click_count: usize,
     pub button: Option<Button>,
     pub relative_x: Option<i32>,
@@ -216,7 +212,7 @@ pub struct MouseStatus {
 }
 
 impl MouseStatus {
-    pub fn get(mouse_state: MouseState, click_toggle: bool, click_count: usize) -> MouseStatus {
+    pub fn get(mouse_state: MouseState, click_count: usize) -> MouseStatus {
         let mouse_x = mouse_state.x();
         let mouse_y = mouse_state.y();
         let button = match mouse_state.left() {
@@ -227,26 +223,14 @@ impl MouseStatus {
             },
         };
 
-        if click_toggle == true {
-            MouseStatus {
-                mouse_x,
-                mouse_y,
-                click_toggle: true,
-                click_count,
-                button,
-                relative_x: None,
-                relative_y: None,
-            }
-        } else {
-            MouseStatus {
-                mouse_x,
-                mouse_y,
-                click_toggle: false,
-                click_count,
-                button,
-                relative_x: None,
-                relative_y: None,
-            }
+        MouseStatus {
+            mouse_x,
+            mouse_y,
+
+            click_count,
+            button,
+            relative_x: None,
+            relative_y: None,
         }
     }
 }
@@ -547,7 +531,7 @@ impl renderer::Renderer {
                         });
                         player.level.number_of_sectors += 1;
 
-                        for (mut i, (x, y)) in points.iter().enumerate() {
+                        for (i, (x, y)) in points.iter().enumerate() {
                             if i == points.len() - 1 {
                                 player.level.walls.push(Wall {
                                     x1: (points[0].0 as f32 - grid.view_shift_x as f32)
