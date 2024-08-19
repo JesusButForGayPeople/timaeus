@@ -1,3 +1,5 @@
+use textures::WATER_GUN_TEXTURE;
+
 use crate::grid::Grid;
 use crate::*;
 
@@ -93,16 +95,25 @@ impl Renderer {
         let difference_top_y = t2 - t1;
         let xs = x1;
         let difference_x = one_if_none(x2 - x1);
-
+        let mut x1_clipped = x1;
+        let mut x2_clipped = x2;
         //clip x
-        let x1_clipped = Self::clip_width(x1);
-        let x2_clipped = Self::clip_width(x2);
 
         // horizontal texture
         let mut horizontal_texture = 0.0;
         let h_step = (wall.texture.unwrap().width as f32) * wall.u / (x2 - x1);
-        if x1 < 0.0 {
+        if x1_clipped < 0.0 {
             horizontal_texture -= h_step as f32 * x1;
+            x1_clipped = 0.0
+        }
+        if x2 < 0.0 {
+            x2_clipped = 0.0
+        }
+        if x1 > SCREEN_WIDTH as f32 {
+            x1_clipped = SCREEN_WIDTH as f32
+        }
+        if x2 > SCREEN_WIDTH as f32 {
+            x2_clipped = SCREEN_WIDTH as f32
         }
         //draw x vertical lines
         for x in (x1_clipped as i32)..(x2_clipped as i32) {
@@ -111,15 +122,24 @@ impl Renderer {
             let y2 = difference_top_y * (x as f32 + 0.5 - xs) / difference_x as f32 + t1;
 
             //clip y
-            let mut y1_clipped = Self::clip_height(y1);
-            let mut y2_clipped = Self::clip_height(y2);
+            let mut y1_clipped = y1;
+            let mut y2_clipped = y2;
 
             // vertical texture
             let mut vertical_texture = 0.0;
             let v_step = (wall.texture.unwrap().height as f32) * wall.v / (y2 - y1);
-            if y1 < 1.0 {
+            if y1 < 0.0 {
                 vertical_texture -= v_step as f32 * y1;
                 y1_clipped = 0.0;
+            }
+            if y2 < 0.0 {
+                y2_clipped = 0.0;
+            }
+            if y1 > SCREEN_HEIGHT as f32 {
+                y1_clipped = SCREEN_HEIGHT as f32;
+            }
+            if y2 > SCREEN_HEIGHT as f32 {
+                y2_clipped = SCREEN_HEIGHT as f32;
             }
 
             match cycle {
@@ -211,6 +231,38 @@ impl Renderer {
         Ok(())
     } // Draws a given wall in 3D perspective accounting for player position
 
+    pub fn draw_first_person(&mut self, gun_texture: Texture) -> Result<(), String> {
+        let mut horizontal_texture: f32 = 0.0;
+        let h_step = gun_texture.width as f32 / (0.3 * SCREEN_WIDTH as f32);
+        let mut vertical_texture: f32 = 0.0;
+        let v_step = (gun_texture.height as f32) / (HALF_HEIGHT) as f32;
+        for x in (0.6 * SCREEN_WIDTH as f32) as usize..(0.9 * SCREEN_WIDTH as f32) as usize {
+            for y in (HALF_HEIGHT)..SCREEN_HEIGHT {
+                let height = gun_texture.height as f32;
+                let width = gun_texture.width as f32;
+                let pixel = (vertical_texture.trunc() % height) * width
+                    + (horizontal_texture.trunc() % width);
+                let pixel_bytes = gun_texture.data[pixel as usize].to_le_bytes();
+                let pixel_color = Color {
+                    r: pixel_bytes[0],
+                    g: pixel_bytes[1],
+                    b: pixel_bytes[2],
+                    a: pixel_bytes[3],
+                };
+                if pixel_color == Color::RGBA(0, 0, 0, 0) {
+                } else if x > (0.7 * SCREEN_WIDTH as f32) as usize
+                    && y < (0.6 * SCREEN_HEIGHT as f32) as usize
+                {
+                } else {
+                    self.draw_dot(x as f32, y as f32, pixel_color)?;
+                }
+                vertical_texture += v_step as f32;
+            }
+            horizontal_texture += h_step as f32;
+        }
+        Ok(())
+    }
+
     pub fn draw3d(&mut self, player_raw: &mut PlayerInfo) -> Result<(), String> {
         // Master function for the player perspective;
         self.draw_mode = DrawMode::Draw3D;
@@ -284,9 +336,9 @@ impl Renderer {
                     let mut world_z3 = sector.top_height as f32 - player.position.z as f32;
                     let mut world_z4 = sector.top_height as f32 - player.position.z as f32;
 
-                    if world_y1.trunc() < 1.0 && world_y2.trunc() < 1.0 {
+                    if world_y1.trunc() < 0.0 && world_y2.trunc() < 0.0 {
                         continue;
-                    } else if world_y1 < 1.0 {
+                    } else if world_y1 < 0.0 {
                         Self::clip_behind(
                             &mut world_x1,
                             &mut world_y1,
@@ -303,7 +355,7 @@ impl Renderer {
                             world_y4,
                             world_z4,
                         );
-                    } else if world_y2.trunc() < 1.0 {
+                    } else if world_y2.trunc() < 0.0 {
                         Self::clip_behind(
                             &mut world_x2,
                             &mut world_y2,
@@ -347,6 +399,7 @@ impl Renderer {
                 sector.distance /= (sector.wall_end - sector.wall_start) as f32;
             }
         }
+        self.draw_first_person(WATER_GUN_TEXTURE)?;
         Ok(())
     }
     // draw3d functions:
@@ -358,7 +411,7 @@ impl Renderer {
             return 0.0;
         }
         if n > SCREEN_WIDTH as f32 {
-            return SCREEN_WIDTH as f32 - 1.0;
+            return SCREEN_WIDTH as f32;
         } else {
             return n;
         }
@@ -369,7 +422,7 @@ impl Renderer {
             return 0.0;
         }
         if n > SCREEN_HEIGHT as f32 {
-            return SCREEN_HEIGHT as f32 - 1.0;
+            return SCREEN_HEIGHT as f32;
         } else {
             return n;
         }

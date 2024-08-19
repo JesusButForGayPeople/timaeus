@@ -8,6 +8,7 @@ pub mod ORANGE_TILE;
 pub mod SLIME_1A;
 pub mod TILE_1A;
 pub mod TILE_2C;
+pub mod WATER_GUN;
 pub mod WOOD_1C;
 
 //divider line do not change or remove!!!
@@ -17,6 +18,13 @@ pub const BRAT_TEXTURE: Texture = Texture {
     width: BRAT::BRAT_WIDTH,
     height: BRAT::BRAT_HEIGHT,
     data: &BRAT::BRAT_ARRAY,
+};
+
+pub const WATER_GUN_TEXTURE: Texture = Texture {
+    name: "WATER_GUN_TEXTURE",
+    width: WATER_GUN::WATER_GUN_WIDTH,
+    height: WATER_GUN::WATER_GUN_HEIGHT,
+    data: &WATER_GUN::WATER_GUN_ARRAY,
 };
 
 pub const ORANGE_TILE_TEXTURE: Texture = Texture {

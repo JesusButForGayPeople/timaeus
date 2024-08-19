@@ -534,14 +534,14 @@ impl renderer::Renderer {
                         for (i, (x, y)) in points.iter().enumerate() {
                             if i == points.len() - 1 {
                                 player.level.walls.push(Wall {
-                                    x1: (points[0].0 as f32 - grid.view_shift_x as f32)
-                                        / grid.scale as f32,
-                                    y1: (points[0].1 as f32 - grid.view_shift_y as f32)
-                                        / grid.scale as f32,
-                                    x2: (points[i - 1].0 as f32 - grid.view_shift_x as f32)
-                                        / grid.scale as f32,
-                                    y2: (points[i - 1].1 as f32 - grid.view_shift_y as f32)
-                                        / grid.scale as f32,
+                                    x1: ((points[0].0 as f32) / grid.scale as f32)
+                                        - grid.view_shift_x as f32,
+                                    y1: ((points[0].1 as f32) / grid.scale as f32)
+                                        - grid.view_shift_y as f32,
+                                    x2: ((points[i - 1].0 as f32) / grid.scale as f32
+                                        - grid.view_shift_x as f32),
+                                    y2: ((points[i - 1].1 as f32) / grid.scale as f32)
+                                        - grid.view_shift_y as f32,
 
                                     color: new_color,
                                     u: 1.0,
@@ -551,12 +551,12 @@ impl renderer::Renderer {
                                 player.level.number_of_walls += 1;
                             } else {
                                 player.level.walls.push(Wall {
-                                    x1: (*x as f32 - grid.view_shift_x as f32) / grid.scale as f32,
-                                    y1: (*y as f32 - grid.view_shift_y as f32) / grid.scale as f32,
-                                    x2: (points[i + 1].0 as f32 - grid.view_shift_x as f32)
-                                        / grid.scale as f32,
-                                    y2: (points[i + 1].1 as f32 - grid.view_shift_y as f32)
-                                        / grid.scale as f32,
+                                    x1: (*x as f32 / grid.scale as f32) - grid.view_shift_x as f32,
+                                    y1: (*y as f32 / grid.scale as f32) - grid.view_shift_y as f32,
+                                    x2: (points[i + 1].0 as f32 / grid.scale as f32)
+                                        - grid.view_shift_x as f32,
+                                    y2: (points[i + 1].1 as f32 / grid.scale as f32)
+                                        - grid.view_shift_y as f32,
 
                                     color: new_color,
                                     u: 1.0,

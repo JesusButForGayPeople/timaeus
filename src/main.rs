@@ -26,9 +26,18 @@ fn main() -> Result<(), String> {
         .opengl()
         .build()
         .map_err(|e| e.to_string())?;
+
     let mut renderer = Renderer::new(window)?;
 
     'running: loop {
+        if renderer.draw_mode == Draw3D {
+            sdl_context.mouse().warp_mouse_in_window(
+                renderer.canvas.window(),
+                HALF_WIDTH as i32,
+                HALF_HEIGHT as i32,
+            );
+        }
+
         let state = event_pump.mouse_state(); // offset mouse position so that it reflects its position within the actual grid
         let relative_state = event_pump.relative_mouse_state();
         let screen_x = ((state.x()) as f32 / (grid.scale as f32)) - grid.view_shift_x as f32;
@@ -114,7 +123,7 @@ fn main() -> Result<(), String> {
                             }
                         }
                         MouseButton::Right => {
-                            if renderer.draw_mode == renderer::DrawMode::Draw3D {
+                            if renderer.draw_mode == renderer::DrawMode::Draw2D {
                                 match grid.selected_sector {
                                     Some(sector) => {
                                         if grid.selected_wall.is_some() {
