@@ -1,0 +1,29 @@
+Log File Title: Timaeus Log
+Date and Time: 12-16-24 02:46:00 pm
+----------------------------------------
+[12-16-24 02:46:02 pm] Player position: XYZ { x: 32, y: 22, z: 10 }, Player angle_h: 0
+[12-16-24 02:46:02 pm] Player position: XYZ { x: 32, y: 12, z: 10 }, Player angle_h: 0
+[12-16-24 02:46:02 pm] Player position: XYZ { x: 32, y: 2, z: 10 }, Player angle_h: 0
+[12-16-24 02:46:03 pm] Player position: XYZ { x: 32, y: -8, z: 10 }, Player angle_h: 0
+[12-16-24 02:46:03 pm] Player position: XYZ { x: 32, y: -18, z: 10 }, Player angle_h: 0
+[12-16-24 02:46:04 pm] Player position: XYZ { x: 32, y: -18, z: 10 }, Player angle_h: 10
+[12-16-24 02:46:04 pm] Player position: XYZ { x: 32, y: -18, z: 10 }, Player angle_h: 20
+[12-16-24 02:46:04 pm] Player position: XYZ { x: 35, y: -9, z: 10 }, Player angle_h: 20
+[12-16-24 02:46:04 pm] Player position: XYZ { x: 38, y: 0, z: 10 }, Player angle_h: 20
+[12-16-24 02:46:04 pm] Player position: XYZ { x: 41, y: 9, z: 10 }, Player angle_h: 20
+[12-16-24 02:46:05 pm] Player position: XYZ { x: 44, y: 18, z: 10 }, Player angle_h: 20
+[12-16-24 02:46:05 pm] Player position: XYZ { x: 44, y: 18, z: 10 }, Player angle_h: 10
+[12-16-24 02:46:05 pm] Player position: XYZ { x: 44, y: 18, z: 10 }, Player angle_h: 0
+[12-16-24 02:46:05 pm] Player position: XYZ { x: 44, y: 28, z: 10 }, Player angle_h: 0
+[12-16-24 02:46:06 pm] Player position: XYZ { x: 44, y: 38, z: 10 }, Player angle_h: 0
+[12-16-24 02:46:06 pm] Player position: XYZ { x: 44, y: 48, z: 10 }, Player angle_h: 0
+[12-16-24 02:46:07 pm] Player position: XYZ { x: 44, y: 58, z: 10 }, Player angle_h: 0
+[12-16-24 02:46:07 pm] Player position: XYZ { x: 44, y: 68, z: 10 }, Player angle_h: 0
+[12-16-24 02:46:07 pm] Player position: XYZ { x: 44, y: 68, z: 10 }, Player angle_h: 10
+[12-16-24 02:46:08 pm] Player position: XYZ { x: 45, y: 77, z: 10 }, Player angle_h: 10
+[12-16-24 02:46:08 pm] Player position: XYZ { x: 46, y: 86, z: 10 }, Player angle_h: 10
+[12-16-24 02:46:08 pm] Player position: XYZ { x: 47, y: 95, z: 10 }, Player angle_h: 10
+[12-16-24 02:46:09 pm] Player position: XYZ { x: 48, y: 104, z: 10 }, Player angle_h: 10
+[12-16-24 02:46:09 pm] Player position: XYZ { x: 48, y: 104, z: 10 }, Player angle_h: 0
+[12-16-24 02:46:09 pm] Player position: XYZ { x: 48, y: 104, z: 10 }, Player angle_h: -10
+[12-16-24 02:46:10 pm] Player position: XYZ { x: 48, y: 104, z: 10 }, Player angle_h: -20

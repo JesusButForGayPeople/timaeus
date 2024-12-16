@@ -7,6 +7,7 @@ use timaeus::renderer::{DrawMode::*, Renderer};
 
 fn main() -> Result<(), String> {
     //initialization:
+    initialize_lookup_tables();
     let sdl_context = sdl2::init()?;
     let frame_duration = Duration::new(0, 1_000_000_000u32 / 60);
     let mut _frame_count = 0;
@@ -29,6 +30,9 @@ fn main() -> Result<(), String> {
 
     let mut renderer = Renderer::new(window)?;
 
+    // Initialize log file
+    let mut log_file = initialize_log_file().map_err(|e| e.to_string())?;
+
     'running: loop {
         if renderer.draw_mode == Draw3D {
             sdl_context.mouse().warp_mouse_in_window(
@@ -42,6 +46,7 @@ fn main() -> Result<(), String> {
         let relative_state = event_pump.relative_mouse_state();
         let screen_x = ((state.x()) as f32 / (grid.scale as f32)) - grid.view_shift_x as f32;
         let screen_y = ((state.y()) as f32 / (grid.scale as f32)) - grid.view_shift_y as f32;
+        player.mouse_state = Some(state);
         grid.get_mouse_status(state);
 
         for event in event_pump.poll_iter() {
@@ -181,29 +186,52 @@ fn main() -> Result<(), String> {
                     Keycode::Equals => grid.scale += 1,
                     Keycode::Minus => grid.scale -= 1,
                     Keycode::Up => match renderer.draw_mode {
-                        Draw3D => PlayerInfo::move_up(&mut player),
+                        Draw3D => {
+                            PlayerInfo::move_up(&mut player);
+                            log_player_state(&mut log_file, &player).map_err(|e| e.to_string())?;
+                        }
                         Draw2D => Grid::view_up(&mut grid),
                     },
                     Keycode::Left => match renderer.draw_mode {
-                        Draw3D => PlayerInfo::move_left(&mut player),
+                        Draw3D => {
+                            PlayerInfo::move_left(&mut player);
+                            log_player_state(&mut log_file, &player).map_err(|e| e.to_string())?;
+                        }
                         Draw2D => Grid::view_left(&mut grid),
                     },
                     Keycode::Down => match renderer.draw_mode {
-                        Draw3D => PlayerInfo::move_down(&mut player),
+                        Draw3D => {
+                            PlayerInfo::move_down(&mut player);
+                            log_player_state(&mut log_file, &player).map_err(|e| e.to_string())?;
+                        }
                         Draw2D => Grid::view_down(&mut grid),
                     },
                     Keycode::Right => match renderer.draw_mode {
-                        Draw3D => PlayerInfo::move_right(&mut player),
+                        Draw3D => {
+                            PlayerInfo::move_right(&mut player);
+                            log_player_state(&mut log_file, &player).map_err(|e| e.to_string())?;
+                        }
                         Draw2D => Grid::view_right(&mut grid),
                     },
-
                     Keycode::W => match renderer.draw_mode {
-                        Draw3D => PlayerInfo::move_fowward(&mut player),
+                        Draw3D => {
+                            PlayerInfo::move_forward(&mut player);
+                            log_player_state(&mut log_file, &player).map_err(|e| e.to_string())?;
+                        }
                         Draw2D => Grid::next_wall(&mut grid, &mut player),
                     },
-                    Keycode::A => PlayerInfo::look_left(&mut player),
-                    Keycode::S => PlayerInfo::move_backward(&mut player),
-                    Keycode::D => PlayerInfo::look_right(&mut player),
+                    Keycode::A => {
+                        PlayerInfo::look_left(&mut player);
+                        log_player_state(&mut log_file, &player).map_err(|e| e.to_string())?;
+                    }
+                    Keycode::S => {
+                        PlayerInfo::move_backward(&mut player);
+                        log_player_state(&mut log_file, &player).map_err(|e| e.to_string())?;
+                    }
+                    Keycode::D => {
+                        PlayerInfo::look_right(&mut player);
+                        log_player_state(&mut log_file, &player).map_err(|e| e.to_string())?;
+                    }
                     Keycode::J => save(&mut player),
                     Keycode::M => match renderer.draw_mode {
                         Draw3D => renderer.draw_mode = Draw2D,
@@ -214,7 +242,24 @@ fn main() -> Result<(), String> {
                     Keycode::P => {
                         println!("{:?}", player.position)
                     }
-
+                    Keycode::Num1 => log_event(&mut log_file, "\n=== Flag 1 set ===\n")
+                        .map_err(|e| e.to_string())?,
+                    Keycode::Num2 => log_event(&mut log_file, "\n=== Flag 2 set ===\n")
+                        .map_err(|e| e.to_string())?,
+                    Keycode::Num3 => log_event(&mut log_file, "\n=== Flag 3 set ===\n")
+                        .map_err(|e| e.to_string())?,
+                    Keycode::Num4 => log_event(&mut log_file, "\n=== Flag 4 set ===\n")
+                        .map_err(|e| e.to_string())?,
+                    Keycode::Num5 => log_event(&mut log_file, "\n=== Flag 5 set ===\n")
+                        .map_err(|e| e.to_string())?,
+                    Keycode::Num6 => log_event(&mut log_file, "\n=== Flag 6 set ===\n")
+                        .map_err(|e| e.to_string())?,
+                    Keycode::Num7 => log_event(&mut log_file, "\n=== Flag 7 set ===\n")
+                        .map_err(|e| e.to_string())?,
+                    Keycode::Num8 => log_event(&mut log_file, "\n=== Flag 8 set ===\n")
+                        .map_err(|e| e.to_string())?,
+                    Keycode::Num9 => log_event(&mut log_file, "\n=== Flag 9 set ===\n")
+                        .map_err(|e| e.to_string())?,
                     _ => {}
                 },
                 _ => {}

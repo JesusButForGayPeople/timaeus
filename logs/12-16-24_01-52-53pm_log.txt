@@ -1,0 +1,41 @@
+Log File Title: Timaeus Log
+Date and Time: 12-16-24 01:52:53 pm
+----------------------------------------
+[12-16-24 01:52:55 pm] Player position: XYZ { x: 32, y: 22, z: 10 }, Player angle_h: 0
+[12-16-24 01:52:55 pm] Player position: XYZ { x: 32, y: 12, z: 10 }, Player angle_h: 0
+[12-16-24 01:52:55 pm] Player position: XYZ { x: 32, y: 2, z: 10 }, Player angle_h: 0
+[12-16-24 01:52:55 pm] Player position: XYZ { x: 32, y: 2, z: 10 }, Player angle_h: 10
+[12-16-24 01:52:56 pm] Player position: XYZ { x: 33, y: 11, z: 10 }, Player angle_h: 10
+[12-16-24 01:52:56 pm] Player position: XYZ { x: 34, y: 20, z: 10 }, Player angle_h: 10
+[12-16-24 01:52:56 pm] Player position: XYZ { x: 35, y: 29, z: 10 }, Player angle_h: 10
+[12-16-24 01:52:56 pm] Player position: XYZ { x: 36, y: 38, z: 10 }, Player angle_h: 10
+[12-16-24 01:52:57 pm] Player position: XYZ { x: 37, y: 47, z: 10 }, Player angle_h: 10
+[12-16-24 01:52:57 pm] Player position: XYZ { x: 38, y: 56, z: 10 }, Player angle_h: 10
+[12-16-24 01:52:57 pm] Player position: XYZ { x: 39, y: 65, z: 10 }, Player angle_h: 10
+[12-16-24 01:52:58 pm] Player position: XYZ { x: 40, y: 74, z: 10 }, Player angle_h: 10
+[12-16-24 01:52:58 pm] 
+=== Flag 1 set ===
+
+[12-16-24 01:52:59 pm] Player position: XYZ { x: 39, y: 65, z: 10 }, Player angle_h: 10
+[12-16-24 01:53:00 pm] Player position: XYZ { x: 39, y: 65, z: 10 }, Player angle_h: 20
+[12-16-24 01:53:01 pm] Player position: XYZ { x: 30, y: 68, z: 10 }, Player angle_h: 20
+[12-16-24 01:53:02 pm] Player position: XYZ { x: 30, y: 68, z: 10 }, Player angle_h: 30
+[12-16-24 01:53:03 pm] Player position: XYZ { x: 22, y: 73, z: 10 }, Player angle_h: 30
+[12-16-24 01:53:03 pm] Player position: XYZ { x: 22, y: 73, z: 10 }, Player angle_h: 40
+[12-16-24 01:53:03 pm] Player position: XYZ { x: 15, y: 79, z: 10 }, Player angle_h: 40
+[12-16-24 01:53:04 pm] Player position: XYZ { x: 8, y: 85, z: 10 }, Player angle_h: 40
+[12-16-24 01:53:04 pm] Player position: XYZ { x: 1, y: 91, z: 10 }, Player angle_h: 40
+[12-16-24 01:53:04 pm] Player position: XYZ { x: -6, y: 97, z: 10 }, Player angle_h: 40
+[12-16-24 01:53:05 pm] Player position: XYZ { x: 0, y: 104, z: 10 }, Player angle_h: 40
+[12-16-24 01:53:05 pm] Player position: XYZ { x: 0, y: 104, z: 10 }, Player angle_h: 50
+[12-16-24 01:53:06 pm] Player position: XYZ { x: 0, y: 104, z: 10 }, Player angle_h: 60
+[12-16-24 01:53:06 pm] Player position: XYZ { x: 0, y: 104, z: 10 }, Player angle_h: 70
+[12-16-24 01:53:06 pm] Player position: XYZ { x: 9, y: 107, z: 10 }, Player angle_h: 70
+[12-16-24 01:53:07 pm] Player position: XYZ { x: 18, y: 110, z: 10 }, Player angle_h: 70
+[12-16-24 01:53:07 pm] Player position: XYZ { x: 27, y: 113, z: 10 }, Player angle_h: 70
+[12-16-24 01:53:08 pm] Player position: XYZ { x: 27, y: 113, z: 10 }, Player angle_h: 60
+[12-16-24 01:53:08 pm] Player position: XYZ { x: 27, y: 113, z: 10 }, Player angle_h: 50
+[12-16-24 01:53:08 pm] Player position: XYZ { x: 27, y: 113, z: 10 }, Player angle_h: 40
+[12-16-24 01:53:09 pm] 
+=== Flag 2 set ===
+

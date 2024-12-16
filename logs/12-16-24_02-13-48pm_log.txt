@@ -1,0 +1,18 @@
+Log File Title: Timaeus Log
+Date and Time: 12-16-24 02:13:48 pm
+----------------------------------------
+[12-16-24 02:13:51 pm] Player position: XYZ { x: 32, y: 32, z: 10 }, Player angle_h: 10
+[12-16-24 02:13:52 pm] Player position: XYZ { x: 31, y: 23, z: 10 }, Player angle_h: 10
+[12-16-24 02:13:52 pm] Player position: XYZ { x: 31, y: 23, z: 10 }, Player angle_h: 20
+[12-16-24 02:13:52 pm] Player position: XYZ { x: 34, y: 32, z: 10 }, Player angle_h: 20
+[12-16-24 02:13:52 pm] Player position: XYZ { x: 37, y: 41, z: 10 }, Player angle_h: 20
+[12-16-24 02:13:53 pm] Player position: XYZ { x: 40, y: 50, z: 10 }, Player angle_h: 20
+[12-16-24 02:13:54 pm] Player position: XYZ { x: 43, y: 59, z: 10 }, Player angle_h: 20
+[12-16-24 02:13:54 pm] Player position: XYZ { x: 46, y: 68, z: 10 }, Player angle_h: 20
+[12-16-24 02:13:54 pm] Player position: XYZ { x: 49, y: 77, z: 10 }, Player angle_h: 20
+[12-16-24 02:13:57 pm] Player position: XYZ { x: 46, y: 68, z: 10 }, Player angle_h: 20
+[12-16-24 02:13:59 pm] Player position: XYZ { x: 49, y: 77, z: 10 }, Player angle_h: 20
+[12-16-24 02:14:00 pm] Player position: XYZ { x: 46, y: 68, z: 10 }, Player angle_h: 20
+[12-16-24 02:14:00 pm] Player position: XYZ { x: 49, y: 77, z: 10 }, Player angle_h: 20
+[12-16-24 02:14:01 pm] Player position: XYZ { x: 46, y: 68, z: 10 }, Player angle_h: 20
+[12-16-24 02:14:01 pm] Player position: XYZ { x: 49, y: 77, z: 10 }, Player angle_h: 20

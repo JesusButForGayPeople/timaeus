@@ -1,0 +1,12 @@
+Log File Title: Timaeus Log
+Date and Time: 12-16-24 02:09:16 pm
+----------------------------------------
+[12-16-24 02:09:18 pm] Player position: XYZ { x: 32, y: 22, z: 10 }, Player angle_h: 0
+[12-16-24 02:09:19 pm] Player position: XYZ { x: 32, y: 22, z: 10 }, Player angle_h: 10
+[12-16-24 02:09:19 pm] Player position: XYZ { x: 33, y: 31, z: 10 }, Player angle_h: 10
+[12-16-24 02:09:20 pm] Player position: XYZ { x: 34, y: 40, z: 10 }, Player angle_h: 10
+[12-16-24 02:09:20 pm] Player position: XYZ { x: 35, y: 49, z: 10 }, Player angle_h: 10
+[12-16-24 02:09:20 pm] Player position: XYZ { x: 36, y: 58, z: 10 }, Player angle_h: 10
+[12-16-24 02:09:20 pm] Player position: XYZ { x: 37, y: 67, z: 10 }, Player angle_h: 10
+[12-16-24 02:09:21 pm] Player position: XYZ { x: 37, y: 67, z: 10 }, Player angle_h: 20
+[12-16-24 02:09:21 pm] Player position: XYZ { x: 40, y: 76, z: 10 }, Player angle_h: 20

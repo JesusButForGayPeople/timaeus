@@ -34,6 +34,29 @@ pub const SCREEN_HEIGHT: usize = RESOLUTION * 120;
 pub const HALF_HEIGHT: usize = SCREEN_HEIGHT / 2;
 pub const PIXEL_SCALE: usize = 1;
 
+const ANGLE_STEP: usize = 10; // Angle step in degrees
+const NUM_ANGLES: usize = 360 / ANGLE_STEP; // Number of discrete angles
+
+const SINE_LOOKUP: [f32; NUM_ANGLES] = {
+    let mut arr = [0.0; NUM_ANGLES];
+    let mut i = 0;
+    while i < NUM_ANGLES {
+        arr[i] = (i as f32 * ANGLE_STEP as f32).to_radians().sin();
+        i += 1;
+    }
+    arr
+};
+
+const COSINE_LOOKUP: [f32; NUM_ANGLES] = {
+    let mut arr = [0.0; NUM_ANGLES];
+    let mut i = 0;
+    while i < NUM_ANGLES {
+        arr[i] = (i as f32 * ANGLE_STEP as f32).to_radians().cos();
+        i += 1;
+    }
+    arr
+};
+
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct XYZ {
     pub x: i32,
@@ -43,9 +66,10 @@ pub struct XYZ {
 
 #[derive(Clone, Default, Debug)]
 pub struct PlayerInfo {
-    pub position: XYZ, // the players position in space
-    pub angle_h: i32,  // the horizontal angle of the players field of view
-    pub level: Level,  // the map that the player is currently within; made up of sectors
+    pub position: XYZ,        // the players position in space
+    pub angle_h_index: usize, // the horizontal angle of the players field of view
+    pub level: Level,         // the map that the player is currently within; made up of sectors
+    pub mouse_state: Option<MouseState>,
 }
 
 impl PlayerInfo {
@@ -64,8 +88,9 @@ impl PlayerInfo {
                 y: 32,
                 z: 10,
             },
-            angle_h: 0,
+            angle_h_index: 0,
             level: init_level,
+            mouse_state: None,
         }
     }
 
@@ -79,16 +104,16 @@ impl PlayerInfo {
                     let x2 = wall.x2 as i32 - player.position.x;
                     let y2 = wall.y2 as i32 - player.position.y;
 
-                    let world_x1 =
-                        x1 as f32 * cosine(player.angle_h) - y1 as f32 * sine(player.angle_h);
-                    let world_x2 =
-                        x2 as f32 * cosine(player.angle_h) - y2 as f32 * sine(player.angle_h);
+                    let world_x1 = x1 as f32 * COSINE_LOOKUP[player.angle_h_index]
+                        - y1 as f32 * SINE_LOOKUP[player.angle_h_index];
+                    let world_x2 = x2 as f32 * COSINE_LOOKUP[player.angle_h_index]
+                        - y2 as f32 * SINE_LOOKUP[player.angle_h_index];
 
                     //world y position:
-                    let world_y1 =
-                        y1 as f32 * cosine(player.angle_h) + x1 as f32 * sine(player.angle_h);
-                    let world_y2 =
-                        y2 as f32 * cosine(player.angle_h) + x2 as f32 * sine(player.angle_h);
+                    let world_y1 = y1 as f32 * COSINE_LOOKUP[player.angle_h_index]
+                        + x1 as f32 * SINE_LOOKUP[player.angle_h_index];
+                    let world_y2 = y2 as f32 * COSINE_LOOKUP[player.angle_h_index]
+                        + x2 as f32 * SINE_LOOKUP[player.angle_h_index];
 
                     sector.distance = distance(
                         0.0,
@@ -104,40 +129,67 @@ impl PlayerInfo {
         player
     } // calculates the distance from the player to a sector and sorts the sectors by distance to the player
 
+    const ANGLE_STEP: usize = 10; // Angle step in degrees
+    const NUM_ANGLES: usize = 360 / ANGLE_STEP; // Number of discrete angles
+
+    lazy_static! {
+        static ref SINE_LOOKUP: [f32; NUM_ANGLES] = {
+            let mut arr = [0.0; NUM_ANGLES];
+            for i in 0..NUM_ANGLES {
+                arr[i] = (i as f32 * ANGLE_STEP as f32).to_radians().sin();
+            }
+            arr
+        };
+        static ref COSINE_LOOKUP: [f32; NUM_ANGLES] = {
+            let mut arr = [0.0; NUM_ANGLES];
+            for i in 0..NUM_ANGLES {
+                arr[i] = (i as f32 * ANGLE_STEP as f32).to_radians().cos();
+            }
+            arr
+        };
+    }
+
     // player movement funtcions:
     pub fn move_up(player: &mut PlayerInfo) {
         player.position.z -= PIXEL_SCALE as i32;
     }
+
     pub fn move_down(player: &mut PlayerInfo) {
         player.position.z += PIXEL_SCALE as i32;
     }
+
     pub fn look_left(player: &mut PlayerInfo) {
-        player.angle_h -= 10;
+        player.angle_h_index = (player.angle_h_index + NUM_ANGLES - 1) % NUM_ANGLES;
     }
+
     pub fn look_right(player: &mut PlayerInfo) {
-        player.angle_h += 10;
+        player.angle_h_index = (player.angle_h_index + 1) % NUM_ANGLES;
     }
-    pub fn move_fowward(player: &mut PlayerInfo) {
-        let dx = (sine(player.angle_h) * 10.0) as i32;
-        let dy = (cosine(player.angle_h) * 10.0) as i32;
+
+    pub fn move_forward(player: &mut PlayerInfo) {
+        let dx = (SINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
+        let dy = (COSINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
         player.position.x += dx;
         player.position.y += dy;
     }
+
     pub fn move_right(player: &mut PlayerInfo) {
-        let dx = (sine(player.angle_h) * 10.0) as i32;
-        let dy = (cosine(player.angle_h) * 10.0) as i32;
+        let dx = (SINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
+        let dy = (COSINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
         player.position.x += dy;
         player.position.y -= dx;
     }
+
     pub fn move_left(player: &mut PlayerInfo) {
-        let dx = (sine(player.angle_h) * 10.0) as i32;
-        let dy = (cosine(player.angle_h) * 10.0) as i32;
+        let dx = (SINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
+        let dy = (COSINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
         player.position.x -= dy;
         player.position.y += dx;
     }
+
     pub fn move_backward(player: &mut PlayerInfo) {
-        let dx = (sine(player.angle_h) * 10.0) as i32;
-        let dy = (cosine(player.angle_h) * 10.0) as i32;
+        let dx = (SINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
+        let dy = (COSINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
         player.position.x -= dx;
         player.position.y -= dy;
     }
@@ -239,45 +291,32 @@ pub enum Surface {
 
 //math functions:
 pub fn sine(num: i32) -> f32 {
-    ((num as f32 - 0.001) / 180.0 * std::f32::consts::PI).sin()
+    ((num as f32) / 180.0 * std::f32::consts::PI).sin()
 } // gives the sine of a float as a percentage of 360 degrees
 
 pub fn cosine(num: i32) -> f32 {
-    ((num as f32 + 0.001) / 180.0 * std::f32::consts::PI).cos()
+    ((num as f32) / 180.0 * std::f32::consts::PI).cos()
 } // gives the cosine of a floatas a percentage of 360 degrees
 
 pub fn one_if_none(n: f32) -> f32 {
-    if n == 0.0 {
-        return 1.0;
+    if n.abs() <= f32::EPSILON {
+        f32::EPSILON
     } else {
-        return n;
+        n
     }
-} // returns one if the given value is zero
+}
 
 pub fn no_less_than_one(n: i32) -> i32 {
-    if n <= 1 {
-        return 1;
-    } else {
-        return n;
-    }
+    std::cmp::max(n, 1)
 } // returns four if the given value is less than four (used to cap grid scale)
 
 pub fn distance(x1: f32, y1: f32, x2: f32, y2: f32) -> f32 {
-    ((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)).sqrt()
+    (x2 - x1).hypot(y2 - y1)
 } // calculates simple 2D cartesean distance
 
 pub fn sort(mut sec_vec: Vec<Sector>) -> Vec<Sector> {
-    let mut swapped = true;
-    while swapped {
-        swapped = false;
-        for i in 0..sec_vec.len() - 1 {
-            if sec_vec[i].distance <= sec_vec[i + 1].distance {
-                sec_vec.swap(i, i + 1);
-                swapped = true;
-            }
-        }
-    }
-    return sec_vec;
+    sec_vec.sort_by(|a, b| b.distance.partial_cmp(&a.distance).unwrap());
+    sec_vec
 } // simple bubble sort for sectors based on distance
 
 pub fn mouse_point(mouse_x: f32, mouse_y: f32) -> (f32, f32) {
@@ -317,10 +356,234 @@ pub fn is_even(x: i32) -> bool {
     }
 }
 
+pub fn clip_near_plane(
+    x1: f32,
+    y1: f32,
+    z1: f32,
+    x2: f32,
+    y2: f32,
+    z2: f32,
+    near_plane: f32,
+) -> Option<((f32, f32, f32), (f32, f32, f32))> {
+    if y1 >= near_plane && y2 >= near_plane {
+        return Some(((x1, y1, z1), (x2, y2, z2)));
+    }
+
+    if y1 < near_plane && y2 < near_plane {
+        return None;
+    }
+
+    let t = (near_plane - y1) / (y2 - y1);
+    let x_clipped = x1 + t * (x2 - x1);
+    let y_clipped = near_plane;
+    let z_clipped = z1 + t * (z2 - z1);
+
+    if y1 < near_plane {
+        Some(((x_clipped, y_clipped, z_clipped), (x2, y2, z2)))
+    } else {
+        Some(((x1, y1, z1), (x_clipped, y_clipped, z_clipped)))
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Texture {
     name: &'static str,
     width: u32,
     height: u32,
     data: &'static [u32],
+}
+
+//Logs:
+use std::fs;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+const SECONDS_IN_A_DAY: i64 = 86400;
+const SECONDS_IN_AN_HOUR: i64 = 3600;
+
+pub fn initialize_log_file() -> std::io::Result<std::fs::File> {
+    // Ensure the "logs" directory exists
+    let log_dir = Path::new("logs");
+    if !log_dir.exists() {
+        fs::create_dir(log_dir)?;
+    }
+
+    // Get the current time and format it
+    let start_time = SystemTime::now();
+    let datetime = start_time.duration_since(UNIX_EPOCH).unwrap();
+    let timestamp = datetime.as_secs() as i64;
+
+    // Convert timestamp to EST (UTC-5)
+    let est_offset = -5 * SECONDS_IN_AN_HOUR;
+    let est_timestamp = timestamp + est_offset;
+
+    // Calculate date and time components
+    let days_since_epoch = est_timestamp / SECONDS_IN_A_DAY;
+    let seconds_in_day = est_timestamp % SECONDS_IN_A_DAY;
+
+    let mut year = 1970;
+    let mut days_remaining = days_since_epoch;
+
+    while days_remaining >= 365 {
+        if is_leap_year(year) {
+            if days_remaining >= 366 {
+                days_remaining -= 366;
+                year += 1;
+            }
+        } else {
+            days_remaining -= 365;
+            year += 1;
+        }
+    }
+
+    let (month, day) = calculate_month_and_day(days_remaining as u32, year);
+
+    let hour = (seconds_in_day / SECONDS_IN_AN_HOUR) % 24;
+    let minute = (seconds_in_day % SECONDS_IN_AN_HOUR) / 60;
+    let second = seconds_in_day % 60;
+
+    // Format the hour and period (am/pm)
+    let period = if hour < 12 { "am" } else { "pm" };
+    let formatted_hour = if hour == 0 {
+        12
+    } else if hour > 12 {
+        hour - 12
+    } else {
+        hour
+    };
+
+    // Create the log file name
+    let log_file_name = format!(
+        "{:02}-{:02}-{:02}_{:02}-{:02}-{:02}{}_log.txt",
+        month,
+        day,
+        year % 100,
+        formatted_hour,
+        minute,
+        second,
+        period
+    );
+
+    // Create a log file with the formatted date and time
+    let log_file_path = log_dir.join(log_file_name);
+    let mut log_file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(true)
+        .open(log_file_path)?;
+
+    // Write header to the log file
+    writeln!(log_file, "Log File Title: Timaeus Log")?;
+    writeln!(
+        log_file,
+        "Date and Time: {:02}-{:02}-{:02} {:02}:{:02}:{:02} {}",
+        month,
+        day,
+        year % 100,
+        formatted_hour,
+        minute,
+        second,
+        period
+    )?;
+    writeln!(log_file, "----------------------------------------")?;
+
+    Ok(log_file)
+}
+
+pub fn log_event(log_file: &mut std::fs::File, event: &str) -> std::io::Result<()> {
+    let now = SystemTime::now();
+    let datetime = now.duration_since(UNIX_EPOCH).unwrap();
+    let timestamp = datetime.as_secs() as i64;
+
+    // Convert timestamp to EST (UTC-5)
+    let est_offset = -5 * SECONDS_IN_AN_HOUR;
+    let est_timestamp = timestamp + est_offset;
+
+    // Calculate date and time components
+    let days_since_epoch = est_timestamp / SECONDS_IN_A_DAY;
+    let seconds_in_day = est_timestamp % SECONDS_IN_A_DAY;
+
+    let mut year = 1970;
+    let mut days_remaining = days_since_epoch;
+
+    while days_remaining >= 365 {
+        if is_leap_year(year) {
+            if days_remaining >= 366 {
+                days_remaining -= 366;
+                year += 1;
+            }
+        } else {
+            days_remaining -= 365;
+            year += 1;
+        }
+    }
+
+    let (month, day) = calculate_month_and_day(days_remaining as u32, year);
+
+    let hour = (seconds_in_day / SECONDS_IN_AN_HOUR) % 24;
+    let minute = (seconds_in_day % SECONDS_IN_AN_HOUR) / 60;
+    let second = seconds_in_day % 60;
+
+    // Format the hour and period (am/pm)
+    let period = if hour < 12 { "am" } else { "pm" };
+    let formatted_hour = if hour == 0 {
+        12
+    } else if hour > 12 {
+        hour - 12
+    } else {
+        hour
+    };
+
+    // Create the timestamp string
+    let timestamp_str = format!(
+        "{:02}-{:02}-{:02} {:02}:{:02}:{:02} {}",
+        month,
+        day,
+        year % 100,
+        formatted_hour,
+        minute,
+        second,
+        period
+    );
+
+    writeln!(log_file, "[{}] {}", timestamp_str, event)?;
+    Ok(())
+}
+
+fn is_leap_year(year: i64) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+}
+
+fn calculate_month_and_day(day_of_year: u32, year: i64) -> (u32, u32) {
+    let days_in_month = [
+        31,
+        28 + if is_leap_year(year) { 1 } else { 0 },
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
+    ];
+
+    let mut month = 0;
+    let mut day = day_of_year;
+
+    while day >= days_in_month[month] {
+        day -= days_in_month[month];
+        month += 1;
+    }
+
+    (month as u32 + 1, day + 1)
+}
+
+pub fn log_player_state(log_file: &mut std::fs::File, player: &PlayerInfo) -> std::io::Result<()> {
+    let event = format!(
+        "Player position: {:?}, Player angle_h: {:?}",
+        player.position, player.angle_h
+    );
+    log_event(log_file, &event)
 }
