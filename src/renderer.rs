@@ -45,8 +45,6 @@ impl Renderer {
     } // Top level draw function that runs every tick
 
     pub fn draw_dot(&mut self, x: f32, y: f32, color: Color) -> Result<(), String> {
-        assert_eq!(x >= 0.0 && x < SCREEN_WIDTH as f32, false);
-        assert_eq!(y >= 0.0 && y < SCREEN_HEIGHT as f32, false);
         self.canvas.set_draw_color(color);
         self.canvas.fill_rect(Rect::new(
             (x * PIXEL_SCALE as f32) as i32,
@@ -88,7 +86,7 @@ impl Renderer {
         t1: f32,
         t2: f32,
         cycle: u32,
-        _color: Color,
+        color: Color,
         sector: &mut Sector,
         wall: &mut Wall,
     ) -> Result<(), String> {
@@ -96,7 +94,7 @@ impl Renderer {
         let difference_bottom_y = b2 - b1;
         let difference_top_y = t2 - t1;
         let xs = x1;
-        let difference_x = (x2 - x1).max(1.0);
+        let difference_x = x2 - x1;
         let mut x1_clipped = x1;
         let mut x2_clipped = x2;
         //clip x
@@ -183,15 +181,18 @@ impl Renderer {
                         //Pdraw_color = sector.bottom_color;
                     }
                     if sector.surface == Some(Surface::TopScan) {
-                        y2_clipped = sector.surface_points[x as usize] as f32;
-                        //draw_color = sector.top_color;
+                        y1_clipped = sector.surface_points[x as usize] as f32;
+                        let draw_color = sector.top_color;
+                        for y in (y1_clipped as i32)..(y2_clipped as i32) {
+                            self.draw_dot(x as f32, y as f32, draw_color)?;
+                        }
                     }
 
                     let x_offset = SCREEN_WIDTH as f32 / 2.0;
                     let y_offset = SCREEN_HEIGHT as f32 / 2.0;
                     let fov = 700.0;
                     let x2 = x - x_offset as i32;
-                    let wall_offset = 0.0;
+                    let wall_offset = 10.0;
 
                     let move_z = (player.position.z as f32 - wall_offset) / y_offset;
                     let y_start = y1_clipped - y_offset;
@@ -209,11 +210,11 @@ impl Renderer {
                         let ry = fx * get_cosine_lookup()[player.angle_h_index]
                             + fy * get_sine_lookup()[player.angle_h_index]
                             + (player.position.x / 60 * 3) as f32;
-                        let pixel = (wall.texture.unwrap().height as f32
-                            - (ry.trunc() % wall.texture.unwrap().height as f32))
+                        let pixel = (sector.surface_texture.unwrap().height as f32
+                            - (ry.trunc() % sector.surface_texture.unwrap().height as f32))
                             - 1.0
-                                * (wall.texture.unwrap().width as f32
-                                    - (rx.trunc() % wall.texture.unwrap().width as f32)
+                                * (sector.surface_texture.unwrap().width as f32
+                                    - (rx.trunc() % sector.surface_texture.unwrap().width as f32)
                                     - 1.0);
                         let pixel_bytes =
                             sector.surface_texture.unwrap().data[pixel as usize].to_be_bytes();
@@ -230,10 +231,6 @@ impl Renderer {
                     println!("Error: Invalid cycle number");
                 }
             }
-
-            // for y in (y1_clipped as i32)..(y2_clipped as i32) {
-            //     self.draw_dot(x as f32, y as f32, draw_color)?;
-            // }
         }
         Ok(())
     } // Draws a given wall in 3D perspective accounting for player position

@@ -58,11 +58,12 @@ pub fn initialize_lookup_tables() {
     });
 }
 
+#[allow(static_mut_refs)]
 pub fn get_sine_lookup() -> &'static [f32; NUM_ANGLES] {
     initialize_lookup_tables();
     unsafe { SINE_LOOKUP.as_ref().unwrap() }
 }
-
+#[allow(static_mut_refs)]
 pub fn get_cosine_lookup() -> &'static [f32; NUM_ANGLES] {
     initialize_lookup_tables();
     unsafe { COSINE_LOOKUP.as_ref().unwrap() }
@@ -291,7 +292,7 @@ pub fn cosine(num: i32) -> f32 {
 
 pub fn one_if_none(n: f32) -> f32 {
     if n.abs() <= f32::EPSILON {
-        f32::EPSILON
+        f32::EPSILON * n.signum()
     } else {
         n
     }
