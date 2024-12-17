@@ -365,7 +365,7 @@ impl renderer::Renderer {
             grid.scale as u32 * 2 * PIXEL_SCALE as u32,
         ))?;
 
-        for t in player.angle_h as i32 - 22..player.angle_h as i32 + 22 {
+        for t in player.angle_h_index as i32 - 22..player.angle_h_index as i32 + 22 {
             let x1 = x as f32 + (70.0 * sine(t));
             let y1 = y as f32 + (70.0 * cosine(t));
             self.draw_dot(x1, y1, color)?;

@@ -1,6 +1,3 @@
-use std::cmp;
-use std::f32::EPSILON;
-
 use textures::WATER_GUN_TEXTURE;
 
 use crate::grid::Grid;
@@ -48,6 +45,8 @@ impl Renderer {
     } // Top level draw function that runs every tick
 
     pub fn draw_dot(&mut self, x: f32, y: f32, color: Color) -> Result<(), String> {
+        assert_eq!(x >= 0.0 && x < SCREEN_WIDTH as f32, false);
+        assert_eq!(y >= 0.0 && y < SCREEN_HEIGHT as f32, false);
         self.canvas.set_draw_color(color);
         self.canvas.fill_rect(Rect::new(
             (x * PIXEL_SCALE as f32) as i32,
@@ -93,23 +92,19 @@ impl Renderer {
         sector: &mut Sector,
         wall: &mut Wall,
     ) -> Result<(), String> {
-        // Debug logging
-        println!(
-            "Drawing wall: x1={}, x2={}, b1={}, b2={}, t1={}, t2={}",
-            x1, x2, b1, b2, t1, t2
-        );
-
-        // Clipping and texture calculation
+        //hold difference in distance
         let difference_bottom_y = b2 - b1;
         let difference_top_y = t2 - t1;
         let xs = x1;
-        let difference_x = one_if_none(x2 - x1);
+        let difference_x = (x2 - x1).max(1.0);
         let mut x1_clipped = x1;
         let mut x2_clipped = x2;
+        //clip x
 
-        // Horizontal texture
+        // horizontal texture
         let mut horizontal_texture = 0.0;
         let h_step = (wall.texture.unwrap().width as f32) * wall.u / (x2 - x1);
+
         if x1_clipped < 0.0 {
             horizontal_texture -= h_step as f32 * x1;
             x1_clipped = 0.0
@@ -123,59 +118,122 @@ impl Renderer {
         if x2 > SCREEN_WIDTH as f32 {
             x2_clipped = SCREEN_WIDTH as f32
         }
+        //draw x vertical lines
+        for x in (x1_clipped as i32)..(x2_clipped as i32) {
+            // the y start and end points
+            let y1 = difference_bottom_y * (x as f32 + 0.5 - xs) / difference_x as f32 + b1;
+            let y2 = difference_top_y * (x as f32 + 0.5 - xs) / difference_x as f32 + t1;
 
-        // Near-plane clipping
-        let near_plane = 0.1; // Adjust this value as needed
-        let clipped_points = clip_near_plane(x1_clipped, 1.0, b1, x2_clipped, 1.0, b2, near_plane);
+            //clip y
 
-        if let Some(((x1_clipped, _, b1), (x2_clipped, _, b2))) = clipped_points {
-            // Draw x vertical lines
-            for x in (x1_clipped as i32)..(x2_clipped as i32) {
-                let y1 = difference_bottom_y * (x as f32 + 0.5 - xs) / difference_x as f32 + b1;
-                let y2 = difference_top_y * (x as f32 + 0.5 - xs) / difference_x as f32 + t1;
+            let mut y1_clipped = y1;
+            let mut y2_clipped = y2;
 
-                // Clip y
-                let mut y1_clipped = y1;
-                let mut y2_clipped = y2;
+            // vertical texture
+            let mut vertical_texture = 0.0;
+            let v_step = (wall.texture.unwrap().height as f32) * wall.v / (y2 - y1);
 
-                // Vertical texture
-                let mut vertical_texture = 0.0;
-                let v_step = (wall.texture.unwrap().height as f32) * wall.v / (y2 - y1);
-                if y1 < 0.0 {
-                    vertical_texture -= v_step as f32 * y1;
-                    y1_clipped = 0.0;
+            if y1 < 0.0 {
+                vertical_texture -= v_step as f32 * y1;
+                y1_clipped = 0.0;
+            }
+            if y2 < 0.0 {
+                y2_clipped = 0.0;
+            }
+            if y1 > SCREEN_HEIGHT as f32 {
+                y1_clipped = SCREEN_HEIGHT as f32;
+            }
+            if y2 > SCREEN_HEIGHT as f32 {
+                y2_clipped = SCREEN_HEIGHT as f32;
+            }
+
+            match cycle {
+                0 => {
+                    // on the first pass we collect the points for the surface we want to draw
+                    if sector.surface == Some(Surface::BottomScan) {
+                        sector.surface_points[x as usize] = y1_clipped as u32;
+                    } // floor points
+                    if sector.surface == Some(Surface::TopScan) {
+                        sector.surface_points[x as usize] = y2_clipped as u32;
+                    } // ceiling points
+                    for y in y1_clipped as i32..y2_clipped as i32 {
+                        if wall.texture.is_some() {
+                            let height = wall.texture.unwrap().height as f32;
+                            let width = wall.texture.unwrap().width as f32;
+                            let pixel = (vertical_texture.trunc() % height) * width
+                                + (horizontal_texture.trunc() % width);
+                            let pixel_bytes =
+                                wall.texture.unwrap().data[pixel as usize].to_le_bytes();
+                            let pixel_color = Color {
+                                r: pixel_bytes[0],
+                                g: pixel_bytes[1],
+                                b: pixel_bytes[2],
+                                a: pixel_bytes[3],
+                            };
+
+                            self.draw_dot(x as f32, y as f32, pixel_color)?;
+                            vertical_texture += v_step as f32;
+                        }
+                    }
+                    horizontal_texture += h_step as f32;
                 }
-                if y2 < 0.0 {
-                    y2_clipped = 0.0;
-                }
-                if y1 > SCREEN_HEIGHT as f32 {
-                    y1_clipped = SCREEN_HEIGHT as f32;
-                }
-                if y2 > SCREEN_HEIGHT as f32 {
-                    y2_clipped = SCREEN_HEIGHT as f32;
-                }
+                1 => {
+                    if sector.surface == Some(Surface::BottomScan) {
+                        y2_clipped = sector.surface_points[x as usize] as f32;
+                        //Pdraw_color = sector.bottom_color;
+                    }
+                    if sector.surface == Some(Surface::TopScan) {
+                        y2_clipped = sector.surface_points[x as usize] as f32;
+                        //draw_color = sector.top_color;
+                    }
 
-                // Drawing logic
-                for y in y1_clipped as i32..y2_clipped as i32 {
-                    if let Some(texture) = wall.texture {
-                        let height = texture.height as f32;
-                        let width = texture.width as f32;
-                        let pixel = (vertical_texture.trunc() % height) * width
-                            + (horizontal_texture.trunc() % width);
-                        let pixel_bytes = texture.data[pixel as usize].to_le_bytes();
+                    let x_offset = SCREEN_WIDTH as f32 / 2.0;
+                    let y_offset = SCREEN_HEIGHT as f32 / 2.0;
+                    let fov = 700.0;
+                    let x2 = x - x_offset as i32;
+                    let wall_offset = 0.0;
+
+                    let move_z = (player.position.z as f32 - wall_offset) / y_offset;
+                    let y_start = y1_clipped - y_offset;
+                    let y_end = y2_clipped - y_offset;
+                    for y in y_start as u32..y_end as u32 {
+                        let mut z = y as f32;
+                        if z as f32 == 0.0 {
+                            z = 0.0001;
+                        }
+                        let fx = x2_clipped / z * move_z;
+                        let fy = fov / z * move_z;
+                        let rx = fx * get_sine_lookup()[player.angle_h_index]
+                            - fy * get_cosine_lookup()[player.angle_h_index]
+                            + (player.position.y / 60 * 3) as f32;
+                        let ry = fx * get_cosine_lookup()[player.angle_h_index]
+                            + fy * get_sine_lookup()[player.angle_h_index]
+                            + (player.position.x / 60 * 3) as f32;
+                        let pixel = (wall.texture.unwrap().height as f32
+                            - (ry.trunc() % wall.texture.unwrap().height as f32))
+                            - 1.0
+                                * (wall.texture.unwrap().width as f32
+                                    - (rx.trunc() % wall.texture.unwrap().width as f32)
+                                    - 1.0);
+                        let pixel_bytes =
+                            sector.surface_texture.unwrap().data[pixel as usize].to_be_bytes();
                         let pixel_color = Color {
-                            r: pixel_bytes[0],
-                            g: pixel_bytes[1],
-                            b: pixel_bytes[2],
-                            a: pixel_bytes[3],
+                            r: pixel_bytes[3],
+                            g: pixel_bytes[2],
+                            b: pixel_bytes[1],
+                            a: pixel_bytes[0],
                         };
-
-                        self.draw_dot(x as f32, y as f32, pixel_color)?;
-                        vertical_texture += v_step as f32;
+                        self.draw_dot(x2 as f32 + x_offset, y as f32 + y_offset, pixel_color)?;
                     }
                 }
-                horizontal_texture += h_step as f32;
+                _ => {
+                    println!("Error: Invalid cycle number");
+                }
             }
+
+            // for y in (y1_clipped as i32)..(y2_clipped as i32) {
+            //     self.draw_dot(x as f32, y as f32, draw_color)?;
+            // }
         }
         Ok(())
     } // Draws a given wall in 3D perspective accounting for player position
@@ -233,7 +291,7 @@ impl Renderer {
                 sector.surface = Some(Surface::TopScan); // if the player is above the top of the sector we collect the ceiling points
                 number_of_cycles += 1;
                 for x in 0..SCREEN_WIDTH {
-                    sector.surface_points[x] = 0 as u32;
+                    sector.surface_points[x] += 1 as u32;
                 } // in the event that one of the walls isnt drawn we fill the missing surface with the top color
             } else {
                 sector.surface = None;
@@ -259,18 +317,18 @@ impl Renderer {
                     } // on the second pass draw the back sides of the walls and the surfaces we collected points for
 
                     //world x position:
-                    let mut world_x1 =
-                        x1 as f32 * cosine(player.angle_h) - y1 as f32 * sine(player.angle_h);
-                    let mut world_x2 =
-                        x2 as f32 * cosine(player.angle_h) - y2 as f32 * sine(player.angle_h);
+                    let mut world_x1 = x1 as f32 * get_cosine_lookup()[player.angle_h_index]
+                        - y1 as f32 * get_sine_lookup()[player.angle_h_index];
+                    let mut world_x2 = x2 as f32 * get_cosine_lookup()[player.angle_h_index]
+                        - y2 as f32 * get_sine_lookup()[player.angle_h_index];
                     let mut world_x3 = world_x1;
                     let mut world_x4 = world_x2;
 
                     //world y position:
-                    let mut world_y1 =
-                        y1 as f32 * cosine(player.angle_h) + x1 as f32 * sine(player.angle_h);
-                    let mut world_y2 =
-                        y2 as f32 * cosine(player.angle_h) + x2 as f32 * sine(player.angle_h);
+                    let mut world_y1 = y1 as f32 * get_cosine_lookup()[player.angle_h_index]
+                        + x1 as f32 * get_sine_lookup()[player.angle_h_index];
+                    let mut world_y2 = y2 as f32 * get_cosine_lookup()[player.angle_h_index]
+                        + x2 as f32 * get_sine_lookup()[player.angle_h_index];
                     let mut world_y3 = world_y1;
                     let mut world_y4 = world_y2;
                     sector.distance += distance(
@@ -286,9 +344,9 @@ impl Renderer {
                     let mut world_z3 = sector.top_height as f32 - player.position.z as f32;
                     let mut world_z4 = sector.top_height as f32 - player.position.z as f32;
 
-                    if world_y1.trunc() < 0.0 && world_y2.trunc() < 0.0 {
+                    if world_y1 < 0.0 && world_y2 < 0.0 {
                         continue;
-                    } else if world_y1 < 0.0 {
+                    } else if world_y1 <= 0.0 {
                         Self::clip_behind(
                             &mut world_x1,
                             &mut world_y1,
@@ -305,7 +363,7 @@ impl Renderer {
                             world_y4,
                             world_z4,
                         );
-                    } else if world_y2.trunc() < 0.0 {
+                    } else if world_y2 <= 0.0 {
                         Self::clip_behind(
                             &mut world_x2,
                             &mut world_y2,
@@ -325,28 +383,22 @@ impl Renderer {
                     }
                     //screen x:
                     let fov = 600.0;
-                    let epsilon = 0.1; // Small value to prevent division by zero and large terms
+                    let epsilon = 0.00001; // Small value to prevent division by zero and large terms
 
-                    let screen_x1 = world_x1
-                        * (fov / (world_y1.abs().max(epsilon) * world_y1.signum()))
-                        + HALF_WIDTH as f32;
-                    let screen_x2 = world_x2
-                        * (fov / (world_y2.abs().max(epsilon) * world_y2.signum()))
-                        + HALF_WIDTH as f32;
+                    let screen_x1 =
+                        (world_x1 * (fov / (world_y1.max(epsilon))) + HALF_WIDTH as f32).round();
+                    let screen_x2 =
+                        (world_x2 * (fov / (world_y2.max(epsilon))) + HALF_WIDTH as f32).round();
 
                     // screen y:
-                    let screen_y1 = world_z1
-                        * (fov / (world_y1.abs().max(epsilon) * world_y1.signum()))
-                        + HALF_HEIGHT as f32;
-                    let screen_y2 = world_z2
-                        * (fov / (world_y2.abs().max(epsilon) * world_y2.signum()))
-                        + HALF_HEIGHT as f32;
-                    let screen_y3 = world_z3
-                        * (fov / (world_y3.abs().max(epsilon) * world_y3.signum()))
-                        + HALF_HEIGHT as f32;
-                    let screen_y4 = world_z4
-                        * (fov / (world_y4.abs().max(epsilon) * world_y4.signum()))
-                        + HALF_HEIGHT as f32;
+                    let screen_y1 =
+                        (world_z1 * (fov / (world_y1.max(epsilon))) + HALF_HEIGHT as f32).round();
+                    let screen_y2 =
+                        (world_z2 * (fov / (world_y2.max(epsilon))) + HALF_HEIGHT as f32).round();
+                    let screen_y3 =
+                        (world_z3 * (fov / (world_y3.max(epsilon))) + HALF_HEIGHT as f32).round();
+                    let screen_y4 =
+                        (world_z4 * (fov / (world_y4.max(epsilon))) + HALF_HEIGHT as f32).round();
                     self.draw_wall(
                         &mut player,
                         screen_x1,
@@ -361,7 +413,7 @@ impl Renderer {
                         &mut wall,
                     )?;
                 }
-                sector.distance /= (sector.wall_end - sector.wall_start).max(1) as f32;
+                sector.distance /= (sector.wall_end.abs() - sector.wall_start.abs()).abs() as f32;
             }
         }
         self.draw_first_person(WATER_GUN_TEXTURE)?;
@@ -396,10 +448,10 @@ impl Renderer {
     pub fn clip_behind(x1: &mut f32, y1: &mut f32, z1: &mut f32, x2: f32, y2: f32, z2: f32) {
         let da = *y1;
         let db = y2;
-        let d = (da - db).max(f32::EPSILON);
+        let d = (da - db).abs();
         let s = (da / d).max(f32::EPSILON);
-        *x1 = *x1 + s * (x2 - (*x1));
-        *y1 = (*y1 + s * (y2 - (*y1))).max(f32::EPSILON);
-        *z1 = *z1 + s * (z2 - (*z1));
+        *x1 = *x1 + s * (x2 - (*x1)).max(1.0);
+        *y1 = (*y1 + s * (y2 - (*y1))).max(1.0);
+        *z1 = *z1 + s * (z2 - (*z1)).abs();
     } //prevents overdrawing behind the player
 }

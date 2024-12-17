@@ -15,7 +15,7 @@ pub const INIT_SECTORS: [Sector; NUM_SECTORS] = [
         bottom_color: Color::RGBA(0, 0, 0, 255),
         surface: None,
         surface_points: [0; crate::SCREEN_WIDTH],
-        surface_texture: Some(textures::BRAT_TEXTURE),
+        surface_texture: Some(textures::SLIME_1A_TEXTURE),
     },
     Sector {
         wall_start: 4,
@@ -27,7 +27,7 @@ pub const INIT_SECTORS: [Sector; NUM_SECTORS] = [
         bottom_color: Color::RGBA(0, 0, 0, 255),
         surface: None,
         surface_points: [0; crate::SCREEN_WIDTH],
-        surface_texture: Some(textures::BRAT_TEXTURE),
+        surface_texture: Some(textures::SLIME_1A_TEXTURE),
     },
     Sector {
         wall_start: 12,
@@ -39,7 +39,7 @@ pub const INIT_SECTORS: [Sector; NUM_SECTORS] = [
         bottom_color: Color::RGBA(0, 0, 0, 255),
         surface: None,
         surface_points: [0; crate::SCREEN_WIDTH],
-        surface_texture: Some(textures::BRAT_TEXTURE),
+        surface_texture: Some(textures::SLIME_1A_TEXTURE),
     },
     Sector {
         wall_start: 0,
@@ -51,7 +51,7 @@ pub const INIT_SECTORS: [Sector; NUM_SECTORS] = [
         bottom_color: Color::RGBA(0, 0, 0, 255),
         surface: None,
         surface_points: [0; crate::SCREEN_WIDTH],
-        surface_texture: Some(textures::BRAT_TEXTURE),
+        surface_texture: Some(textures::SLIME_1A_TEXTURE),
     },
 ];
 

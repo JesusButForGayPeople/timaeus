@@ -23,7 +23,7 @@ fn main() -> Result<(), String> {
 
     let window = video_subsystem
         .window("Timaeus W.I.P.", SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32)
-        .position_centered()
+        .position(4920, 150)
         .opengl()
         .build()
         .map_err(|e| e.to_string())?;
@@ -248,18 +248,7 @@ fn main() -> Result<(), String> {
                         .map_err(|e| e.to_string())?,
                     Keycode::Num3 => log_event(&mut log_file, "\n=== Flag 3 set ===\n")
                         .map_err(|e| e.to_string())?,
-                    Keycode::Num4 => log_event(&mut log_file, "\n=== Flag 4 set ===\n")
-                        .map_err(|e| e.to_string())?,
-                    Keycode::Num5 => log_event(&mut log_file, "\n=== Flag 5 set ===\n")
-                        .map_err(|e| e.to_string())?,
-                    Keycode::Num6 => log_event(&mut log_file, "\n=== Flag 6 set ===\n")
-                        .map_err(|e| e.to_string())?,
-                    Keycode::Num7 => log_event(&mut log_file, "\n=== Flag 7 set ===\n")
-                        .map_err(|e| e.to_string())?,
-                    Keycode::Num8 => log_event(&mut log_file, "\n=== Flag 8 set ===\n")
-                        .map_err(|e| e.to_string())?,
-                    Keycode::Num9 => log_event(&mut log_file, "\n=== Flag 9 set ===\n")
-                        .map_err(|e| e.to_string())?,
+
                     _ => {}
                 },
                 _ => {}
@@ -447,33 +436,4 @@ fn main() -> Result<(), String> {
 
     std::thread::sleep(frame_duration);
     Ok(())
-}
-
-pub struct Debug {
-    player: PlayerInfo,
-    grid: grid::Grid,
-}
-
-pub fn debug(player: PlayerInfo, grid: grid::Grid, prev_frame: Option<Debug>) -> Debug {
-    match prev_frame {
-        Some(prev_frame) => {
-            if prev_frame.player.position != player.position {
-                println!(
-                    "Player position: {:#?},\n Player angle_h: {:#?}",
-                    player.position, player.angle_h
-                );
-            }
-            if prev_frame.player.angle_h != player.angle_h {
-                println!(
-                    "Player position: {:#?},\n Player angle_h: {:#?}",
-                    player.position, player.angle_h
-                );
-            }
-            if prev_frame.grid != grid {
-                println!("Grid x: {:#?}", grid);
-            }
-        }
-        _ => (),
-    }
-    Debug { player, grid }
 }

@@ -34,28 +34,39 @@ pub const SCREEN_HEIGHT: usize = RESOLUTION * 120;
 pub const HALF_HEIGHT: usize = SCREEN_HEIGHT / 2;
 pub const PIXEL_SCALE: usize = 1;
 
+use std::sync::Once;
+
 const ANGLE_STEP: usize = 10; // Angle step in degrees
 const NUM_ANGLES: usize = 360 / ANGLE_STEP; // Number of discrete angles
 
-const SINE_LOOKUP: [f32; NUM_ANGLES] = {
-    let mut arr = [0.0; NUM_ANGLES];
-    let mut i = 0;
-    while i < NUM_ANGLES {
-        arr[i] = (i as f32 * ANGLE_STEP as f32).to_radians().sin();
-        i += 1;
-    }
-    arr
-};
+static INIT: Once = Once::new();
+static mut SINE_LOOKUP: Option<[f32; NUM_ANGLES]> = None;
+static mut COSINE_LOOKUP: Option<[f32; NUM_ANGLES]> = None;
 
-const COSINE_LOOKUP: [f32; NUM_ANGLES] = {
-    let mut arr = [0.0; NUM_ANGLES];
-    let mut i = 0;
-    while i < NUM_ANGLES {
-        arr[i] = (i as f32 * ANGLE_STEP as f32).to_radians().cos();
-        i += 1;
-    }
-    arr
-};
+pub fn initialize_lookup_tables() {
+    INIT.call_once(|| {
+        let mut sine_arr = [0.0; NUM_ANGLES];
+        let mut cosine_arr = [0.0; NUM_ANGLES];
+        for i in 0..NUM_ANGLES {
+            sine_arr[i] = (i as f32 * ANGLE_STEP as f32).to_radians().sin();
+            cosine_arr[i] = (i as f32 * ANGLE_STEP as f32).to_radians().cos();
+        }
+        unsafe {
+            SINE_LOOKUP = Some(sine_arr);
+            COSINE_LOOKUP = Some(cosine_arr);
+        }
+    });
+}
+
+pub fn get_sine_lookup() -> &'static [f32; NUM_ANGLES] {
+    initialize_lookup_tables();
+    unsafe { SINE_LOOKUP.as_ref().unwrap() }
+}
+
+pub fn get_cosine_lookup() -> &'static [f32; NUM_ANGLES] {
+    initialize_lookup_tables();
+    unsafe { COSINE_LOOKUP.as_ref().unwrap() }
+}
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct XYZ {
@@ -104,16 +115,16 @@ impl PlayerInfo {
                     let x2 = wall.x2 as i32 - player.position.x;
                     let y2 = wall.y2 as i32 - player.position.y;
 
-                    let world_x1 = x1 as f32 * COSINE_LOOKUP[player.angle_h_index]
-                        - y1 as f32 * SINE_LOOKUP[player.angle_h_index];
-                    let world_x2 = x2 as f32 * COSINE_LOOKUP[player.angle_h_index]
-                        - y2 as f32 * SINE_LOOKUP[player.angle_h_index];
+                    let world_x1 = x1 as f32 * get_cosine_lookup()[player.angle_h_index]
+                        - y1 as f32 * get_sine_lookup()[player.angle_h_index];
+                    let world_x2 = x2 as f32 * get_cosine_lookup()[player.angle_h_index]
+                        - y2 as f32 * get_sine_lookup()[player.angle_h_index];
 
                     //world y position:
-                    let world_y1 = y1 as f32 * COSINE_LOOKUP[player.angle_h_index]
-                        + x1 as f32 * SINE_LOOKUP[player.angle_h_index];
-                    let world_y2 = y2 as f32 * COSINE_LOOKUP[player.angle_h_index]
-                        + x2 as f32 * SINE_LOOKUP[player.angle_h_index];
+                    let world_y1 = y1 as f32 * get_cosine_lookup()[player.angle_h_index]
+                        + x1 as f32 * get_sine_lookup()[player.angle_h_index];
+                    let world_y2 = y2 as f32 * get_cosine_lookup()[player.angle_h_index]
+                        + x2 as f32 * get_sine_lookup()[player.angle_h_index];
 
                     sector.distance = distance(
                         0.0,
@@ -128,26 +139,6 @@ impl PlayerInfo {
         player.level.sectors = sort(player.level.sectors.clone());
         player
     } // calculates the distance from the player to a sector and sorts the sectors by distance to the player
-
-    const ANGLE_STEP: usize = 10; // Angle step in degrees
-    const NUM_ANGLES: usize = 360 / ANGLE_STEP; // Number of discrete angles
-
-    lazy_static! {
-        static ref SINE_LOOKUP: [f32; NUM_ANGLES] = {
-            let mut arr = [0.0; NUM_ANGLES];
-            for i in 0..NUM_ANGLES {
-                arr[i] = (i as f32 * ANGLE_STEP as f32).to_radians().sin();
-            }
-            arr
-        };
-        static ref COSINE_LOOKUP: [f32; NUM_ANGLES] = {
-            let mut arr = [0.0; NUM_ANGLES];
-            for i in 0..NUM_ANGLES {
-                arr[i] = (i as f32 * ANGLE_STEP as f32).to_radians().cos();
-            }
-            arr
-        };
-    }
 
     // player movement funtcions:
     pub fn move_up(player: &mut PlayerInfo) {
@@ -167,29 +158,29 @@ impl PlayerInfo {
     }
 
     pub fn move_forward(player: &mut PlayerInfo) {
-        let dx = (SINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
-        let dy = (COSINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
+        let dx = (get_sine_lookup()[player.angle_h_index] * 10.0) as i32;
+        let dy = (get_cosine_lookup()[player.angle_h_index] * 10.0) as i32;
         player.position.x += dx;
         player.position.y += dy;
     }
 
     pub fn move_right(player: &mut PlayerInfo) {
-        let dx = (SINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
-        let dy = (COSINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
+        let dx = (get_sine_lookup()[player.angle_h_index] * 10.0) as i32;
+        let dy = (get_cosine_lookup()[player.angle_h_index] * 10.0) as i32;
         player.position.x += dy;
         player.position.y -= dx;
     }
 
     pub fn move_left(player: &mut PlayerInfo) {
-        let dx = (SINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
-        let dy = (COSINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
+        let dx = (get_sine_lookup()[player.angle_h_index] * 10.0) as i32;
+        let dy = (get_cosine_lookup()[player.angle_h_index] * 10.0) as i32;
         player.position.x -= dy;
         player.position.y += dx;
     }
 
     pub fn move_backward(player: &mut PlayerInfo) {
-        let dx = (SINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
-        let dy = (COSINE_LOOKUP[player.angle_h_index] * 10.0) as i32;
+        let dx = (get_sine_lookup()[player.angle_h_index] * 10.0) as i32;
+        let dy = (get_cosine_lookup()[player.angle_h_index] * 10.0) as i32;
         player.position.x -= dx;
         player.position.y -= dy;
     }
@@ -311,7 +302,7 @@ pub fn no_less_than_one(n: i32) -> i32 {
 } // returns four if the given value is less than four (used to cap grid scale)
 
 pub fn distance(x1: f32, y1: f32, x2: f32, y2: f32) -> f32 {
-    (x2 - x1).hypot(y2 - y1)
+    ((x2 - x1).hypot(y2 - y1)).abs()
 } // calculates simple 2D cartesean distance
 
 pub fn sort(mut sec_vec: Vec<Sector>) -> Vec<Sector> {
@@ -347,14 +338,6 @@ pub fn wall_point(
         Err("Error!".to_string())
     }
 } // returns the first or second point of a given wall
-
-pub fn is_even(x: i32) -> bool {
-    if (x as f32 / 2.0).fract() == 0.0 {
-        true
-    } else {
-        false
-    }
-}
 
 pub fn clip_near_plane(
     x1: f32,
@@ -583,7 +566,7 @@ fn calculate_month_and_day(day_of_year: u32, year: i64) -> (u32, u32) {
 pub fn log_player_state(log_file: &mut std::fs::File, player: &PlayerInfo) -> std::io::Result<()> {
     let event = format!(
         "Player position: {:?}, Player angle_h: {:?}",
-        player.position, player.angle_h
+        player.position, player.angle_h_index
     );
     log_event(log_file, &event)
 }
