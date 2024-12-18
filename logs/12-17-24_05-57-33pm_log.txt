@@ -1,0 +1,41 @@
+Log File Title: Timaeus Log
+Date and Time: 12-17-24 05:57:33 pm
+----------------------------------------
+[12-17-24 05:57:35 pm] Player position: XYZ { x: 32, y: 32, z: 9 }, Player angle_h: 0
+[12-17-24 05:57:35 pm] Player position: XYZ { x: 32, y: 32, z: 8 }, Player angle_h: 0
+[12-17-24 05:57:35 pm] Player position: XYZ { x: 32, y: 32, z: 7 }, Player angle_h: 0
+[12-17-24 05:57:35 pm] Player position: XYZ { x: 32, y: 32, z: 6 }, Player angle_h: 0
+[12-17-24 05:57:35 pm] Player position: XYZ { x: 32, y: 32, z: 5 }, Player angle_h: 0
+[12-17-24 05:57:35 pm] Player position: XYZ { x: 32, y: 32, z: 4 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: 3 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: 2 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: 1 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: 0 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -1 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -2 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -3 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -4 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -5 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -6 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -7 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -8 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -9 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -10 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -11 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -12 }, Player angle_h: 0
+[12-17-24 05:57:36 pm] Player position: XYZ { x: 32, y: 32, z: -12 }, Player angle_h: 35
+[12-17-24 05:57:37 pm] Player position: XYZ { x: 32, y: 32, z: -12 }, Player angle_h: 34
+[12-17-24 05:57:37 pm] Player position: XYZ { x: 41, y: 35, z: -12 }, Player angle_h: 34
+[12-17-24 05:57:38 pm] Player position: XYZ { x: 50, y: 38, z: -12 }, Player angle_h: 34
+[12-17-24 05:57:38 pm] Player position: XYZ { x: 59, y: 41, z: -12 }, Player angle_h: 34
+[12-17-24 05:57:38 pm] Player position: XYZ { x: 68, y: 44, z: -12 }, Player angle_h: 34
+[12-17-24 05:57:38 pm] Player position: XYZ { x: 77, y: 47, z: -12 }, Player angle_h: 34
+[12-17-24 05:57:38 pm] Player position: XYZ { x: 86, y: 50, z: -12 }, Player angle_h: 34
+[12-17-24 05:57:38 pm] Player position: XYZ { x: 95, y: 53, z: -12 }, Player angle_h: 34
+[12-17-24 05:57:38 pm] Player position: XYZ { x: 104, y: 56, z: -12 }, Player angle_h: 34
+[12-17-24 05:57:38 pm] Player position: XYZ { x: 104, y: 56, z: -12 }, Player angle_h: 33
+[12-17-24 05:57:38 pm] Player position: XYZ { x: 104, y: 56, z: -12 }, Player angle_h: 32
+[12-17-24 05:57:38 pm] Player position: XYZ { x: 110, y: 49, z: -12 }, Player angle_h: 32
+[12-17-24 05:57:39 pm] Player position: XYZ { x: 116, y: 42, z: -12 }, Player angle_h: 32
+[12-17-24 05:57:39 pm] Player position: XYZ { x: 122, y: 35, z: -12 }, Player angle_h: 32
+[12-17-24 05:57:39 pm] Player position: XYZ { x: 128, y: 28, z: -12 }, Player angle_h: 32

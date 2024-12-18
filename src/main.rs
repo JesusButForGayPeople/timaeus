@@ -255,16 +255,6 @@ fn main() -> Result<(), String> {
             }
         }
 
-        if grid.mouse_status.button.is_none() == true {
-            Grid::deselect(&mut grid)
-        } // deselect all points if there is no mouse button (note: this does not clear grid.selection)
-
-        if grid.selected_point.is_some() {
-            grid.selection.sectors = Vec::new();
-            grid.selection.walls = Vec::new();
-            grid.selection.points = Vec::new();
-        } // if a point is selected clear grid.selection as to not highlight any points besides the one being moved
-
         for sector in 0..player.level.number_of_sectors {
             for wall_number in player.level.sectors[sector as usize].wall_start
                 ..player.level.sectors[sector as usize].wall_end
@@ -371,6 +361,16 @@ fn main() -> Result<(), String> {
             }
         }
 
+        if grid.mouse_status.button.is_none() == true {
+            Grid::deselect(&mut grid)
+        } // deselect all points if there is no mouse button (note: this does not clear grid.selection)
+
+        if grid.selected_point.is_some() {
+            grid.selection.sectors = Vec::new();
+            grid.selection.walls = Vec::new();
+            grid.selection.points = Vec::new();
+        } // if a point is selected clear grid.selection as to not highlight any points besides the one being moved
+
         match grid.selected_point {
             Some(mut point) => {
                 grid.highlight_x = None;
@@ -423,13 +423,6 @@ fn main() -> Result<(), String> {
         }
 
         _frame_count += 1;
-        // let player_clone = player.clone();
-        // let grid_clone = grid.clone();
-        // if debug2.is_some() {
-        //     debug2 = Some(debug(player_clone, grid_clone, Some(debug2.unwrap())));
-        // } else {
-        //     debug2 = Some(debug(player_clone, grid_clone, None));
-        // }
 
         Renderer::draw(&mut renderer, &mut player, &mut grid, &font)?;
     }

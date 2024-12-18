@@ -97,7 +97,6 @@ impl Renderer {
         let difference_x = x2 - x1;
         let mut x1_clipped = x1;
         let mut x2_clipped = x2;
-
         //clip x
 
         // horizontal texture
@@ -175,21 +174,7 @@ impl Renderer {
                     }
                     horizontal_texture += h_step as f32;
                 }
-
                 1 => {
-                    let x_offset = SCREEN_WIDTH as f32 / 2.0;
-                    let y_offset = SCREEN_HEIGHT as f32 / 2.0;
-                    let fov = 700.0;
-                    let x2 = x - x_offset as i32;
-                    let wall_offset = 0.0;
-                    // Curvature factor to adjust the curvature of the texture
-                    let base_curvature_factor = 0.0; // Base curvature factor
-
-                    // Texture scale to adjust the size of the texture
-                    let texture_scale = 20.0; // Adjust this value to change the texture scale
-
-                    let move_z = (player.position.z as f32 - wall_offset) / y_offset;
-
                     if sector.surface == Some(Surface::BottomScan) {
                         y2_clipped = sector.surface_points[x as usize] as f32;
                         //Pdraw_color = sector.bottom_color;
@@ -202,6 +187,19 @@ impl Renderer {
                         }
                     }
 
+                    let x_offset = SCREEN_WIDTH as f32 / 2.0;
+                    let y_offset = SCREEN_HEIGHT as f32 / 2.0;
+                    let fov = 700.0;
+                    let x2 = x - x_offset as i32;
+                    let wall_offset = 0.0;
+
+                    // Curvature factor to adjust the curvature of the texture
+                    let base_curvature_factor = 0.0; // Base curvature factor
+
+                    // Texture scale to adjust the size of the texture
+                    let texture_scale = 20.0; // Adjust this value to change the texture scale
+
+                    let move_z = (player.position.z as f32 - wall_offset) / y_offset;
                     let y_start = y1_clipped - y_offset;
                     let y_end = y2_clipped - y_offset;
 
