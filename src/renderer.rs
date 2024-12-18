@@ -86,7 +86,7 @@ impl Renderer {
         t1: f32,
         t2: f32,
         cycle: u32,
-        color: Color,
+        _color: Color,
         sector: &mut Sector,
         wall: &mut Wall,
     ) -> Result<(), String> {
@@ -97,6 +97,7 @@ impl Renderer {
         let difference_x = x2 - x1;
         let mut x1_clipped = x1;
         let mut x2_clipped = x2;
+
         //clip x
 
         // horizontal texture
@@ -123,7 +124,6 @@ impl Renderer {
             let y2 = difference_top_y * (x as f32 + 0.5 - xs) / difference_x as f32 + t1;
 
             //clip y
-
             let mut y1_clipped = y1;
             let mut y2_clipped = y2;
 
@@ -175,7 +175,21 @@ impl Renderer {
                     }
                     horizontal_texture += h_step as f32;
                 }
+
                 1 => {
+                    let x_offset = SCREEN_WIDTH as f32 / 2.0;
+                    let y_offset = SCREEN_HEIGHT as f32 / 2.0;
+                    let fov = 700.0;
+                    let x2 = x - x_offset as i32;
+                    let wall_offset = 0.0;
+                    // Curvature factor to adjust the curvature of the texture
+                    let base_curvature_factor = 0.0; // Base curvature factor
+
+                    // Texture scale to adjust the size of the texture
+                    let texture_scale = 20.0; // Adjust this value to change the texture scale
+
+                    let move_z = (player.position.z as f32 - wall_offset) / y_offset;
+
                     if sector.surface == Some(Surface::BottomScan) {
                         y2_clipped = sector.surface_points[x as usize] as f32;
                         //Pdraw_color = sector.bottom_color;
@@ -188,42 +202,63 @@ impl Renderer {
                         }
                     }
 
-                    let x_offset = SCREEN_WIDTH as f32 / 2.0;
-                    let y_offset = SCREEN_HEIGHT as f32 / 2.0;
-                    let fov = 700.0;
-                    let x2 = x - x_offset as i32;
-                    let wall_offset = 10.0;
-
-                    let move_z = (player.position.z as f32 - wall_offset) / y_offset;
                     let y_start = y1_clipped - y_offset;
                     let y_end = y2_clipped - y_offset;
+
                     for y in y_start as u32..y_end as u32 {
                         let mut z = y as f32;
                         if z as f32 == 0.0 {
-                            z = 0.0001;
+                            z = 0.1;
                         }
-                        let fx = x2_clipped / z * move_z;
-                        let fy = fov / z * move_z;
-                        let rx = fx * get_sine_lookup()[player.angle_h_index]
-                            - fy * get_cosine_lookup()[player.angle_h_index]
-                            + (player.position.y / 60 * 3) as f32;
-                        let ry = fx * get_cosine_lookup()[player.angle_h_index]
-                            + fy * get_sine_lookup()[player.angle_h_index]
-                            + (player.position.x / 60 * 3) as f32;
-                        let pixel = (sector.surface_texture.unwrap().height as f32
-                            - (ry.trunc() % sector.surface_texture.unwrap().height as f32))
-                            - 1.0
-                                * (sector.surface_texture.unwrap().width as f32
-                                    - (rx.trunc() % sector.surface_texture.unwrap().width as f32)
-                                    - 1.0);
+
+                        let fx = x2 as f32 / (z * move_z);
+                        let fy = fov / (z * move_z);
+
+                        // Calculate the distance (r) from the center
+                        let r = ((fx * fx) + (fy * fy)).sqrt();
+
+                        // Calculate the angle (theta) around the center
+                        let theta = fy.atan2(fx);
+
+                        // Adjust curvature factor based on distance
+                        let curvature_factor = base_curvature_factor / (1.0 + r / 100.0);
+
+                        // Map the polar coordinates to texture coordinates
+                        let texture_width = sector.surface_texture.unwrap().width as f32;
+                        let texture_height = sector.surface_texture.unwrap().height as f32;
+
+                        // Adjust texture coordinates based on curvature factor and texture scale
+                        let rx = if base_curvature_factor == 0.0 {
+                            (fx / texture_scale) % texture_width
+                        } else {
+                            ((r * curvature_factor) / texture_scale) % texture_width
+                        };
+
+                        let ry = if base_curvature_factor == 0.0 {
+                            (fy / texture_scale) % texture_height
+                        } else {
+                            ((theta / (2.0 * std::f32::consts::PI) * texture_height)
+                                / texture_scale)
+                                % texture_height
+                        };
+
+                        // Calculate the pixel index in the texture
+                        let pixel_x = (rx.abs() * texture_width) as usize % texture_width as usize;
+                        let pixel_y =
+                            (ry.abs() * texture_height) as usize % texture_height as usize;
+                        let pixel_index = pixel_y * texture_width as usize + pixel_x;
+
+                        // Get the pixel color from the texture
                         let pixel_bytes =
-                            sector.surface_texture.unwrap().data[pixel as usize].to_be_bytes();
+                            sector.surface_texture.unwrap().data[pixel_index].to_be_bytes();
                         let pixel_color = Color {
                             r: pixel_bytes[3],
                             g: pixel_bytes[2],
                             b: pixel_bytes[1],
                             a: pixel_bytes[0],
                         };
+
+                        // Draw the pixel on the screen
                         self.draw_dot(x2 as f32 + x_offset, y as f32 + y_offset, pixel_color)?;
                     }
                 }

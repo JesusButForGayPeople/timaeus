@@ -12,11 +12,11 @@ pub use sdl2::{
 };
 pub use std::{
     collections::HashSet,
-    fs::{File, OpenOptions},
+    fs::{self, File, OpenOptions},
     io::{Read, Write},
     path::{Path, PathBuf},
     sync::Arc,
-    time::Duration,
+    time::{Duration, SystemTime, UNIX_EPOCH},
     vec::Vec,
 };
 pub mod colors;
@@ -299,15 +299,20 @@ pub fn one_if_none(n: f32) -> f32 {
 }
 
 pub fn no_less_than_one(n: i32) -> i32 {
-    std::cmp::max(n, 1)
+    let k = std::cmp::max(n, 1);
+    assert!(k >= 1);
+    k
 } // returns four if the given value is less than four (used to cap grid scale)
 
 pub fn distance(x1: f32, y1: f32, x2: f32, y2: f32) -> f32 {
-    ((x2 - x1).hypot(y2 - y1)).abs()
+    let d = ((x2 - x1).hypot(y2 - y1)).abs();
+    assert!(d >= 0.0);
+    d
 } // calculates simple 2D cartesean distance
 
 pub fn sort(mut sec_vec: Vec<Sector>) -> Vec<Sector> {
     sec_vec.sort_by(|a, b| b.distance.partial_cmp(&a.distance).unwrap());
+    assert!(sec_vec[0].distance >= sec_vec[1].distance);
     sec_vec
 } // simple bubble sort for sectors based on distance
 
@@ -340,35 +345,6 @@ pub fn wall_point(
     }
 } // returns the first or second point of a given wall
 
-pub fn clip_near_plane(
-    x1: f32,
-    y1: f32,
-    z1: f32,
-    x2: f32,
-    y2: f32,
-    z2: f32,
-    near_plane: f32,
-) -> Option<((f32, f32, f32), (f32, f32, f32))> {
-    if y1 >= near_plane && y2 >= near_plane {
-        return Some(((x1, y1, z1), (x2, y2, z2)));
-    }
-
-    if y1 < near_plane && y2 < near_plane {
-        return None;
-    }
-
-    let t = (near_plane - y1) / (y2 - y1);
-    let x_clipped = x1 + t * (x2 - x1);
-    let y_clipped = near_plane;
-    let z_clipped = z1 + t * (z2 - z1);
-
-    if y1 < near_plane {
-        Some(((x_clipped, y_clipped, z_clipped), (x2, y2, z2)))
-    } else {
-        Some(((x1, y1, z1), (x_clipped, y_clipped, z_clipped)))
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Texture {
     name: &'static str,
@@ -378,8 +354,6 @@ pub struct Texture {
 }
 
 //Logs:
-use std::fs;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 const SECONDS_IN_A_DAY: i64 = 86400;
 const SECONDS_IN_AN_HOUR: i64 = 3600;
